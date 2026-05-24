@@ -1,0 +1,6 @@
+{
+  "appDisplayName": "Nudge",
+  "storage": {
+    "localStorageKey": "nudge_v4"
+  }
+}

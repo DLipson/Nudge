@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { LocalStorageAdapter } from "./LocalStorageAdapter";
+import { taskTimingKey } from "../lib/taskTiming";
 
 async function makeAdapter(): Promise<LocalStorageAdapter> {
   localStorage.clear();
@@ -13,10 +14,11 @@ describe("LocalStorageAdapter", () => {
   beforeEach(() => localStorage.clear());
 
   describe("projects", () => {
-    it("starts with sample data when storage is empty", async () => {
+    it("starts empty when storage is empty", async () => {
       const adapter = await makeAdapter();
       const projects = await adapter.fetchProjects();
-      expect(projects.length).toBeGreaterThan(0);
+      expect(projects).toHaveLength(0);
+      expect(adapter.getDiagnostics().stateSource).toBe("empty");
     });
 
     it("addProject creates a project that can be fetched", async () => {
@@ -63,6 +65,39 @@ describe("LocalStorageAdapter", () => {
   });
 
   describe("tasks", () => {
+    it("starts timing the first task added to an active project", async () => {
+      const now = new Date("2026-05-18T09:00:00");
+      vi.useFakeTimers();
+      vi.setSystemTime(now);
+
+      const adapter = await makeAdapter();
+      const project = await adapter.addProject!("P", "#aaa", 25);
+      const task = await adapter.addTask!(project.id, "Task", "");
+
+      expect(adapter.getTaskStartTimes()[taskTimingKey(task)]).toBe(now.getTime());
+
+      vi.useRealTimers();
+    });
+
+    it("starts timing the next task when the current task is completed", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-05-18T09:00:00"));
+
+      const adapter = await makeAdapter();
+      const project = await adapter.addProject!("P", "#aaa", 25);
+      const first = await adapter.addTask!(project.id, "First", "");
+      const second = await adapter.addTask!(project.id, "Second", "");
+
+      vi.setSystemTime(new Date("2026-05-18T09:10:00"));
+      await adapter.completeTask!(first.id);
+
+      const startTimes = adapter.getTaskStartTimes();
+      expect(startTimes[taskTimingKey(first)]).toBeUndefined();
+      expect(startTimes[taskTimingKey(second)]).toBe(new Date("2026-05-18T09:10:00").getTime());
+
+      vi.useRealTimers();
+    });
+
     it("addTask appends a task to the project", async () => {
       const adapter = await makeAdapter();
       const project = await adapter.addProject!("P", "#aaa", 25);
@@ -143,6 +178,23 @@ describe("LocalStorageAdapter", () => {
       expect(tasks.map((t) => t.name)).toEqual(["B", "C", "A"]);
     });
 
+    it("starts timing the newly active task when the current task is skipped", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-05-18T09:00:00"));
+
+      const adapter = await makeAdapter();
+      const { project, a, b } = await makeProjectWithTasks(adapter);
+
+      vi.setSystemTime(new Date("2026-05-18T09:05:00"));
+      adapter.moveTaskToEnd(project.id, a.id);
+
+      const startTimes = adapter.getTaskStartTimes();
+      expect(startTimes[taskTimingKey(a)]).toBeUndefined();
+      expect(startTimes[taskTimingKey(b)]).toBe(new Date("2026-05-18T09:05:00").getTime());
+
+      vi.useRealTimers();
+    });
+
     it("reorderTask moves a task to a specific index", async () => {
       const adapter = await makeAdapter();
       const { project, a } = await makeProjectWithTasks(adapter);
@@ -172,6 +224,7 @@ describe("LocalStorageAdapter", () => {
       await adapter2.connect();
       const projects = await adapter2.fetchProjects();
       expect(projects.some((p) => p.name === "Persisted")).toBe(true);
+      expect(adapter2.getDiagnostics().stateSource).toBe("persisted");
     });
   });
 });

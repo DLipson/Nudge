@@ -11,6 +11,13 @@ declare global {
           body?: string;
         }
       ) => Promise<{ ok: boolean; status: number; statusText: string; text: string }>;
+      getAppInfo: () => Promise<{
+        appName: string;
+        userDataPath: string;
+        localStorageKey: string;
+      }>;
+      getLaunchOnStartup: () => Promise<boolean>;
+      setLaunchOnStartup: (enabled: boolean) => Promise<boolean>;
       showNotification: (title: string, body: string) => void;
     };
   }
@@ -58,6 +65,7 @@ export interface Settings {
   quietHoursStart: number; // Hour (0-23) when quiet hours begin
   quietHoursEnd: number; // Hour (0-23) when quiet hours end
   nudgeTone: "gentle" | "firm"; // Affects notification language
+  launchOnStartup: boolean;
 
   // Workflowy integration
   workflowy: WorkflowyConfig;
@@ -67,6 +75,16 @@ export interface AppState {
   projects: Project[];
   settings: Settings;
   taskStartTimes: Record<string, number>; // taskId -> timestamp when task became active
+}
+
+export interface StorageDiagnostics {
+  storageKey: string;
+  appName: string | null;
+  appStoragePath: string | null;
+  stateSource: "persisted" | "empty" | "invalid";
+  hasPersistedState: boolean;
+  projectCount: number;
+  workflowyEnabled: boolean;
 }
 
 // Nudge level for visual indicators
@@ -95,6 +113,7 @@ export const DEFAULT_SETTINGS: Settings = {
   quietHoursStart: 22, // 10 PM
   quietHoursEnd: 8, // 8 AM
   nudgeTone: "gentle",
+  launchOnStartup: false,
   workflowy: DEFAULT_WORKFLOWY_CONFIG,
 };
 

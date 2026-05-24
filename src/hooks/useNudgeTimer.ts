@@ -49,7 +49,7 @@ export function useNudgeTimer({
       }
 
       // Check if task has exceeded nudge interval
-      const age = taskAge(task.id, taskStartTimes);
+      const age = taskAge(task, taskStartTimes);
       const nudgeThreshold = project.nudgeMinutes * 60_000;
 
       if (age >= nudgeThreshold) {

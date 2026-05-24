@@ -27,22 +27,24 @@ describe("formatDuration", () => {
 });
 
 describe("taskAge", () => {
+  const task = { id: "t1", sourceId: "local-storage" };
+
   it("returns near-zero when task has no recorded start time", () => {
-    const age = taskAge("unknown-id", {});
+    const age = taskAge({ id: "unknown-id", sourceId: "local-storage" }, {});
     expect(age).toBeGreaterThanOrEqual(0);
     expect(age).toBeLessThan(50);
   });
 
   it("returns elapsed milliseconds for a tracked task", () => {
     const start = Date.now() - 5_000;
-    const age = taskAge("t1", { t1: start });
+    const age = taskAge(task, { "local-storage:t1": start });
     expect(age).toBeGreaterThanOrEqual(5_000);
     expect(age).toBeLessThan(5_300);
   });
 
   it("returns 0 for a task started right now", () => {
     const start = Date.now();
-    const age = taskAge("t1", { t1: start });
+    const age = taskAge(task, { "local-storage:t1": start });
     expect(age).toBeGreaterThanOrEqual(0);
     expect(age).toBeLessThan(50);
   });

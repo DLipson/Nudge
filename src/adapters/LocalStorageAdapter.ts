@@ -1,9 +1,9 @@
 import type { TaskSourceAdapter } from "./types";
-import type { Project, Task, Settings, AppState } from "../types";
+import type { Project, Task, Settings, AppState, StorageDiagnostics } from "../types";
 import { DEFAULT_SETTINGS, COLORS } from "../types";
 import { uid } from "../lib/uid";
-
-const STORAGE_KEY = "nudge_v4";
+import { syncActiveTaskStartTimes, taskTimingKey } from "../lib/taskTiming";
+import { APP_DISPLAY_NAME, STORAGE_KEY } from "../config/storage";
 
 /**
  * LocalStorageAdapter
@@ -19,11 +19,25 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
   private connected = false;
   private lastSync: number | null = null;
   private state: AppState | null = null;
+  private diagnostics: StorageDiagnostics = {
+    storageKey: STORAGE_KEY,
+    appName: null,
+    appStoragePath: null,
+    stateSource: "empty",
+    hasPersistedState: false,
+    projectCount: 0,
+    workflowyEnabled: false,
+  };
 
   // ── Connection ────────────────────────────────────────────────────────────
 
   async connect(): Promise<void> {
     this.state = this.loadFromStorage();
+    await this.loadRuntimeInfo();
+    if (this.syncTaskStartTimes(this.state.projects)) {
+      this.persist();
+    }
+    this.updateDiagnostics();
     this.connected = true;
     this.lastSync = Date.now();
   }
@@ -61,8 +75,8 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       if (task) {
         task.done = true;
         task.completedAt = Date.now();
-        delete this.state.taskStartTimes[taskId];
-        this.persist();
+        delete this.state.taskStartTimes[taskTimingKey(task)];
+        this.persistState();
         return;
       }
     }
@@ -76,7 +90,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       if (task) {
         task.done = false;
         task.completedAt = null;
-        this.persist();
+        this.persistState();
         return;
       }
     }
@@ -103,7 +117,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     };
 
     project.tasks.push(task);
-    this.persist();
+    this.persistState();
     return task;
   }
 
@@ -119,7 +133,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       if (task) {
         task.name = name;
         task.description = description;
-        this.persist();
+        this.persistState();
         return;
       }
     }
@@ -131,9 +145,9 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     for (const project of this.state.projects) {
       const idx = project.tasks.findIndex((t) => t.id === taskId);
       if (idx >= 0) {
-        project.tasks.splice(idx, 1);
-        delete this.state.taskStartTimes[taskId];
-        this.persist();
+        const [task] = project.tasks.splice(idx, 1);
+        delete this.state.taskStartTimes[taskTimingKey(task)];
+        this.persistState();
         return;
       }
     }
@@ -157,7 +171,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     };
 
     this.state.projects.push(project);
-    this.persist();
+    this.persistState();
     return project;
   }
 
@@ -174,7 +188,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       project.name = name;
       project.color = color;
       project.nudgeMinutes = nudgeMinutes;
-      this.persist();
+      this.persistState();
     }
   }
 
@@ -184,11 +198,13 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     const project = this.state.projects.find((p) => p.id === projectId);
     if (project) {
       // Clean up task start times
-      project.tasks.forEach((t) => delete this.state!.taskStartTimes[t.id]);
+      project.tasks.forEach((task) => {
+        delete this.state!.taskStartTimes[taskTimingKey(task)];
+      });
       this.state.projects = this.state.projects.filter(
         (p) => p.id !== projectId
       );
-      this.persist();
+      this.persistState();
     }
   }
 
@@ -221,10 +237,27 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     return this.state.taskStartTimes;
   }
 
-  setTaskStartTime(taskId: string, time: number): void {
+  setTaskStartTime(taskKey: string, time: number): void {
     if (!this.state) throw new Error("Adapter not connected");
-    this.state.taskStartTimes[taskId] = time;
+    this.state.taskStartTimes[taskKey] = time;
     this.persist();
+  }
+
+  syncTaskStartTimes(projects: Project[]): boolean {
+    if (!this.state) throw new Error("Adapter not connected");
+
+    const result = syncActiveTaskStartTimes(
+      projects,
+      this.state.taskStartTimes
+    );
+
+    if (!result.changed) {
+      return false;
+    }
+
+    this.state.taskStartTimes = result.taskStartTimes;
+    this.persist();
+    return true;
   }
 
   toggleProjectActive(projectId: string): void {
@@ -232,7 +265,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     const project = this.state.projects.find((p) => p.id === projectId);
     if (project) {
       project.active = !project.active;
-      this.persist();
+      this.persistState();
     }
   }
 
@@ -242,7 +275,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       const task = project.tasks.find((t) => t.id === taskId);
       if (task) {
         task.snoozedUntil = Date.now() + minutes * 60_000;
-        this.persist();
+        this.persistState();
         return;
       }
     }
@@ -254,7 +287,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       const task = project.tasks.find((t) => t.id === taskId);
       if (task) {
         task.snoozedUntil = null;
-        this.persist();
+        this.persistState();
         return;
       }
     }
@@ -269,7 +302,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     if (idx >= 0) {
       const [task] = project.tasks.splice(idx, 1);
       project.tasks.push(task);
-      this.persist();
+      this.persistState();
     }
   }
 
@@ -285,7 +318,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     const [task] = project.tasks.splice(currentIdx, 1);
     // Insert at new position
     project.tasks.splice(newIndex, 0, task);
-    this.persist();
+    this.persistState();
   }
 
   // Get full state (for useAppState hook)
@@ -294,34 +327,82 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     return this.state;
   }
 
+  getDiagnostics(): StorageDiagnostics {
+    return this.diagnostics;
+  }
+
   // ── Private helpers ───────────────────────────────────────────────────────
 
   private loadFromStorage(): AppState {
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    if (saved === null) {
+      this.diagnostics.stateSource = "empty";
+      this.diagnostics.hasPersistedState = false;
+      return this.buildEmptyState();
+    }
+
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.projects)) {
-          return {
-            projects: parsed.projects.map(this.normalizeProject).filter(Boolean),
-            settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
-            taskStartTimes: parsed.taskStartTimes || {},
-          };
-        }
+      const parsed = JSON.parse(saved);
+      if (parsed && Array.isArray(parsed.projects)) {
+        this.diagnostics.stateSource = "persisted";
+        this.diagnostics.hasPersistedState = true;
+        return {
+          projects: parsed.projects.map(this.normalizeProject).filter(Boolean),
+          settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
+          taskStartTimes: parsed.taskStartTimes || {},
+        };
       }
     } catch {
-      // Ignore parse errors
+      this.diagnostics.stateSource = "invalid";
+      this.diagnostics.hasPersistedState = true;
+      return this.buildEmptyState();
     }
-    return this.buildSampleData();
+
+    this.diagnostics.stateSource = "invalid";
+    this.diagnostics.hasPersistedState = true;
+    return this.buildEmptyState();
   }
 
   private persist(): void {
     if (!this.state) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+      this.diagnostics.stateSource = "persisted";
+      this.diagnostics.hasPersistedState = true;
+      this.updateDiagnostics();
     } catch {
       // Ignore storage errors
     }
+  }
+
+  private persistState(): void {
+    this.syncTaskStartTimes(this.state?.projects ?? []);
+    this.persist();
+  }
+
+  private async loadRuntimeInfo(): Promise<void> {
+    if (!window.electronAPI?.getAppInfo) {
+      this.diagnostics.appName = APP_DISPLAY_NAME;
+      return;
+    }
+
+    try {
+      const info = await window.electronAPI.getAppInfo();
+      this.diagnostics.appName = info.appName;
+      this.diagnostics.appStoragePath = info.userDataPath;
+    } catch {
+      this.diagnostics.appName = APP_DISPLAY_NAME;
+    }
+  }
+
+  private updateDiagnostics(): void {
+    if (!this.state) {
+      return;
+    }
+
+    this.diagnostics.projectCount = this.state.projects.length;
+    this.diagnostics.workflowyEnabled = this.state.settings.workflowy.enabled;
   }
 
   private normalizeTask = (t: unknown): Task | null => {
@@ -360,101 +441,11 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     };
   };
 
-  private buildSampleData(): AppState {
-    const now = Date.now();
-    const p1id = uid();
-    const p2id = uid();
-
-    const t1: Task = {
-      id: uid(),
-      name: "Write landing page copy",
-      description: "Draft headline, subheadline, and 3 benefit bullets",
-      done: false,
-      completedAt: null,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-    const t2: Task = {
-      id: uid(),
-      name: "Set up analytics",
-      description: "Install tracking on key conversion events",
-      done: false,
-      completedAt: null,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-    const t3: Task = {
-      id: uid(),
-      name: "Prepare launch email",
-      description: "Draft announcement for existing users",
-      done: false,
-      completedAt: null,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-    const t4: Task = {
-      id: uid(),
-      name: "Schedule social posts",
-      description: "Queue 5 posts across channels",
-      done: false,
-      completedAt: null,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-    const t5: Task = {
-      id: uid(),
-      name: "Audit existing components",
-      description: "List all UI elements currently in use",
-      done: true,
-      completedAt: now - 3_600_000,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-    const t6: Task = {
-      id: uid(),
-      name: "Define color tokens",
-      description: "Set up light/dark mode color variables",
-      done: false,
-      completedAt: null,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-    const t7: Task = {
-      id: uid(),
-      name: "Build button variants",
-      description: "Primary, secondary, danger states",
-      done: false,
-      completedAt: null,
-      snoozedUntil: null,
-      sourceId: this.id,
-    };
-
+  private buildEmptyState(): AppState {
     return {
-      projects: [
-        {
-          id: p1id,
-          name: "Product Launch",
-          color: COLORS[0],
-          nudgeMinutes: 25,
-          active: true,
-          tasks: [t1, t2, t3, t4],
-          sourceId: this.id,
-        },
-        {
-          id: p2id,
-          name: "Design System",
-          color: COLORS[1],
-          nudgeMinutes: 30,
-          active: true,
-          tasks: [t5, t6, t7],
-          sourceId: this.id,
-        },
-      ],
+      projects: [],
       settings: { ...DEFAULT_SETTINGS },
-      taskStartTimes: {
-        [t1.id]: now - 5 * 60_000,
-        [t6.id]: now - 2 * 60_000,
-      },
+      taskStartTimes: {},
     };
   }
 }

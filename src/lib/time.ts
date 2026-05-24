@@ -1,3 +1,6 @@
+import type { Task } from "../types";
+import { taskTimingKey } from "./taskTiming";
+
 /**
  * Format a duration in milliseconds to a human-readable string
  * e.g., 125000 -> "2m", 3700000 -> "1h 1m"
@@ -52,8 +55,8 @@ export function isQuietHours(
  * Get the age of a task in milliseconds
  */
 export function taskAge(
-  taskId: string,
+  task: Pick<Task, "id" | "sourceId">,
   taskStartTimes: Record<string, number>
 ): number {
-  return Date.now() - (taskStartTimes[taskId] ?? Date.now());
+  return Date.now() - (taskStartTimes[taskTimingKey(task)] ?? Date.now());
 }

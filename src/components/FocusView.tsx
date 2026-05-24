@@ -35,7 +35,7 @@ export function FocusView({
   const needsAttention = activeProjects.filter((p) => {
     const n = nextTask(p);
     if (!n || isSnoozed(n)) return false;
-    const age = taskAge(n.id, taskStartTimes);
+    const age = taskAge(n, taskStartTimes);
     return age / (p.nudgeMinutes * 60_000) >= 0.7;
   }).length;
 

@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import type { Project, Task, Settings, AppState, WorkflowyConfig } from "../types";
+import type {
+  Project,
+  Task,
+  Settings,
+  AppState,
+  WorkflowyConfig,
+  StorageDiagnostics,
+} from "../types";
 import { LocalStorageAdapter } from "../adapters/LocalStorageAdapter";
 import { WorkflowyAdapter } from "../adapters/WorkflowyAdapter";
 
@@ -30,6 +37,7 @@ export interface UseAppStateReturn {
   workflowySyncing: boolean;
   workflowyError: string | null;
   workflowyLastSync: number | null;
+  storageDiagnostics: StorageDiagnostics | null;
 
   // Project operations
   addProject: (name: string, color: string, nudgeMinutes: number) => Promise<Project>;
@@ -81,6 +89,7 @@ export function useAppState(): UseAppStateReturn {
   const [workflowySyncing, setWorkflowySyncing] = useState(false);
   const [workflowyError, setWorkflowyError] = useState<string | null>(null);
   const [workflowyLastSync, setWorkflowyLastSync] = useState<number | null>(null);
+  const [storageDiagnostics, setStorageDiagnostics] = useState<StorageDiagnostics | null>(null);
   const [tick, setTick] = useState(0);
   const lastWorkflowySyncRef = useRef<number>(0);
 
@@ -92,8 +101,17 @@ export function useAppState(): UseAppStateReturn {
         await adp.connect();
       }
       const state = adp.getFullState();
-      setLocalState(state);
+      if (window.electronAPI?.getLaunchOnStartup) {
+        const launchOnStartup = await window.electronAPI.getLaunchOnStartup();
+        if (state.settings.launchOnStartup !== launchOnStartup) {
+          adp.updateSettings({ launchOnStartup });
+        }
+      }
+
+      setLocalState(adp.getFullState());
+      setStorageDiagnostics(adp.getDiagnostics());
       setIsLoading(false);
+      console.info("[Nudge] storage initialized", adp.getDiagnostics());
 
       // If Workflowy is enabled, start initial sync
       if (state.settings.workflowy?.enabled && state.settings.workflowy?.apiKey) {
@@ -115,6 +133,7 @@ export function useAppState(): UseAppStateReturn {
     if (tick > 0 && localAdapter?.isConnected()) {
       const state = localAdapter.getFullState();
       setLocalState(state);
+      setStorageDiagnostics(localAdapter.getDiagnostics());
 
       // Auto-sync Workflowy every 60 seconds if enabled
       const wfConfig = state.settings.workflowy;
@@ -165,7 +184,6 @@ export function useAppState(): UseAppStateReturn {
       }
 
       const projects = await adapter.fetchProjects();
-      console.log(`[Workflowy] Sync complete — ${projects.length} project(s) found`);
       setWorkflowyProjects(projects);
       const now = Date.now();
       lastWorkflowySyncRef.current = now;
@@ -182,6 +200,7 @@ export function useAppState(): UseAppStateReturn {
   const refresh = useCallback(() => {
     if (localAdapter?.isConnected()) {
       setLocalState(localAdapter.getFullState());
+      setStorageDiagnostics(localAdapter.getDiagnostics());
     }
   }, []);
 
@@ -376,6 +395,14 @@ export function useAppState(): UseAppStateReturn {
           workflowyAdapter = null;
         }
       }
+
+      if (typeof settings.launchOnStartup === "boolean") {
+        window.electronAPI?.setLaunchOnStartup?.(settings.launchOnStartup).catch(
+          (error) => {
+            console.error("Failed to update startup setting:", error);
+          }
+        );
+      }
     },
     [refresh]
   );
@@ -408,6 +435,24 @@ export function useAppState(): UseAppStateReturn {
     return [...local, ...wfOnly];
   }, [localState?.projects, workflowyProjects]);
 
+  useEffect(() => {
+    if (isLoading || !localAdapter?.isConnected()) {
+      return;
+    }
+
+    const changed = localAdapter.syncTaskStartTimes(allProjects);
+    if (!changed) {
+      return;
+    }
+
+    const state = localAdapter.getFullState();
+    setLocalState({
+      ...state,
+      taskStartTimes: { ...state.taskStartTimes },
+    });
+    setStorageDiagnostics(localAdapter.getDiagnostics());
+  }, [allProjects, isLoading]);
+
   const activeProjects = useMemo(
     () => allProjects.filter((p) => p.active),
     [allProjects]
@@ -422,6 +467,7 @@ export function useAppState(): UseAppStateReturn {
     workflowySyncing,
     workflowyError,
     workflowyLastSync,
+    storageDiagnostics,
 
     // Project operations
     addProject,

@@ -86,7 +86,7 @@ export function Sidebar({
           const next = nextTask(p);
           const level =
             next && p.active
-              ? getNudgeLevel(taskAge(next.id, taskStartTimes), p.nudgeMinutes)
+              ? getNudgeLevel(taskAge(next, taskStartTimes), p.nudgeMinutes)
               : null;
 
           return (
@@ -169,7 +169,7 @@ export function Sidebar({
               const next = nextTask(p);
               const level =
                 next && p.active
-                  ? getNudgeLevel(taskAge(next.id, taskStartTimes), p.nudgeMinutes)
+                  ? getNudgeLevel(taskAge(next, taskStartTimes), p.nudgeMinutes)
                   : null;
 
               return (
