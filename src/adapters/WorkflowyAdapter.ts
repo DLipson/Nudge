@@ -38,10 +38,12 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
 
   private config: WorkflowyConfig;
   private connected = false;
+  private fetchingNodes = false;
   private lastSync: number | null = null;
   private nodesCache: Map<string, WorkflowyNode> = new Map();
   private projectNodes: WorkflowyNode[] = [];
   private childrenMap: Map<string, WorkflowyNode[]> = new Map();
+  private rawChildrenMap: Map<string, WorkflowyNode[]> = new Map();
 
   constructor(config: WorkflowyConfig) {
     this.config = config;
@@ -77,6 +79,7 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
     this.nodesCache.clear();
     this.projectNodes = [];
     this.childrenMap.clear();
+    this.rawChildrenMap.clear();
   }
 
   isConnected(): boolean {
@@ -147,6 +150,54 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
     return Array.isArray(data) ? data : ((data as { nodes?: WorkflowyNode[] }).nodes ?? []);
   }
 
+  private sortNodesByPriority(nodes: WorkflowyNode[]): WorkflowyNode[] {
+    return nodes
+      .map((node, index) => ({ node, index }))
+      .sort((a, b) => {
+        const ap = a.node.priority ?? Number.POSITIVE_INFINITY;
+        const bp = b.node.priority ?? Number.POSITIVE_INFINITY;
+        if (ap !== bp) return ap - bp;
+        return a.index - b.index;
+      })
+      .map(({ node }) => node);
+  }
+
+  private summarizeNode(node: WorkflowyNode, index: number) {
+    return {
+      index,
+      id: node.id,
+      name: stripHtml(node.name),
+      done: !!node.completedAt,
+      completedAt: node.completedAt ?? null,
+      priority: node.priority ?? null,
+    };
+  }
+
+  private buildProjectOrderDiagnostic() {
+    return this.projectNodes.map((project) => {
+      const presortedNodes = this.rawChildrenMap.get(project.id) ?? [];
+      const sortedNodes = this.childrenMap.get(project.id) ?? [];
+      const chosenNode = sortedNodes.find((task) => !task.completedAt) ?? null;
+      const prioritySortedNextNode = sortedNodes.find((task) => !task.completedAt) ?? null;
+
+      return {
+        id: project.id,
+        name: stripHtml(project.name),
+        priority: project.priority ?? null,
+        selectionRule: "first unfinished task in the current app order",
+        presortedTasks: presortedNodes.map((task, index) => this.summarizeNode(task, index)),
+        prioritySortedTasks: sortedNodes.map((task, index) => this.summarizeNode(task, index)),
+        chosenNextTask: chosenNode
+          ? this.summarizeNode(chosenNode, sortedNodes.findIndex((task) => task.id === chosenNode.id))
+          : null,
+        prioritySortedNextTask: prioritySortedNextNode
+          ? this.summarizeNode(prioritySortedNextNode, sortedNodes.findIndex((task) => task.id === prioritySortedNextNode.id))
+          : null,
+        chosenMatchesPrioritySorted: chosenNode?.id === prioritySortedNextNode?.id,
+      };
+    });
+  }
+
   // Navigate a path like ["Life", "Work"] from root.
   // Each segment matched case-insensitively (substring) against stripped node names.
   // Returns the final WorkflowyNode, or null if any segment is not found.
@@ -183,66 +234,79 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
         const subtasks = await this.fetchNodeChildren(child.id);
         for (const t of subtasks) this.nodesCache.set(t.id, t);
 
+        if (this.projectNodes.some((n) => n.id === child.id)) return;
+
         this.projectNodes.push(child);
 
         if (subtasks.length > 0) {
-          this.childrenMap.set(child.id, subtasks);
-          console.log(`[Workflowy] Project "${stripHtml(child.name)}" → ${subtasks.length} task(s)`);
+          this.rawChildrenMap.set(child.id, subtasks);
+          this.childrenMap.set(child.id, this.sortNodesByPriority(subtasks));
         } else {
-          // No subtasks — the node is a single-task project containing itself
+          this.rawChildrenMap.set(child.id, [child]);
           this.childrenMap.set(child.id, [child]);
-          console.log(`[Workflowy] Single-task project: "${stripHtml(child.name)}"`);
         }
       })
     );
   }
 
   private async fetchAllNodes(): Promise<void> {
+    if (this.fetchingNodes) return;
+    this.fetchingNodes = true;
     this.nodesCache.clear();
     this.projectNodes = [];
     this.childrenMap.clear();
+    this.rawChildrenMap.clear();
 
-    console.log(`[Workflowy] Fetching nodes with tag="${this.config.projectTag}"`);
+    try {
+      if (this.config.searchPaths?.trim()) {
+        // ── Configured path search ──────────────────────────────────────────
+        const paths = this.config.searchPaths
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .map((p) => p.split(">").map((s) => s.trim()).filter(Boolean));
 
-    if (this.config.searchPaths?.trim()) {
-      // ── Configured path search ────────────────────────────────────────────
-      const paths = this.config.searchPaths
-        .split(",")
-        .map((p) => p.trim())
-        .filter(Boolean)
-        .map((p) => p.split(">").map((s) => s.trim()).filter(Boolean));
+        // Deduplicate paths so identical entries don't scan the same location twice
+        const seen = new Set<string>();
+        const uniquePaths = paths.filter((p) => {
+          const key = p.join(">");
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
 
-      console.log(`[Workflowy] Using ${paths.length} configured search path(s)`);
+        await Promise.all(
+          uniquePaths.map(async (segments) => {
+            const destNode = await this.navigatePath(segments);
+            if (!destNode) return;
+            await this.resolveTaggedChildren(destNode.id);
+          })
+        );
+      } else {
+        // ── Default: root + one level deep ─────────────────────────────────
+        const tag = this.config.projectTag.toLowerCase();
+        const rootNodes = await this.fetchNodeChildren("None");
 
-      await Promise.all(
-        paths.map(async (segments) => {
-          const label = segments.join(" > ");
-          console.log(`[Workflowy] Navigating: ${label}`);
-          const destNode = await this.navigatePath(segments);
-          if (!destNode) return;
-          await this.resolveTaggedChildren(destNode.id);
-        })
-      );
-    } else {
-      // ── Default: root + one level deep ───────────────────────────────────
-      const tag = this.config.projectTag.toLowerCase();
-      const rootNodes = await this.fetchNodeChildren("None");
-      console.log(`[Workflowy] ${rootNodes.length} root node(s):`, rootNodes.map((n) => stripHtml(n.name)));
+        for (const node of rootNodes) this.nodesCache.set(node.id, node);
 
-      for (const node of rootNodes) this.nodesCache.set(node.id, node);
+        const untaggedRoots = rootNodes.filter((n) => !stripHtml(n.name).toLowerCase().includes(tag));
 
-      const untaggedRoots = rootNodes.filter((n) => !stripHtml(n.name).toLowerCase().includes(tag));
+        await this.resolveTaggedChildren("None");
 
-      // Tagged root nodes — use the same resolution logic
-      await this.resolveTaggedChildren("None");
+        await Promise.all(
+          untaggedRoots.map((parent) => this.resolveTaggedChildren(parent.id))
+        );
+      }
 
-      // One level deeper inside untagged roots
-      await Promise.all(
-        untaggedRoots.map((parent) => this.resolveTaggedChildren(parent.id))
-      );
+      console.log("[Workflowy] project order diagnostic", {
+        projectTag: this.config.projectTag,
+        searchPaths: this.config.searchPaths,
+        projectCount: this.projectNodes.length,
+        projects: this.buildProjectOrderDiagnostic(),
+      });
+    } finally {
+      this.fetchingNodes = false;
     }
-
-    console.log(`[Workflowy] Total projects: ${this.projectNodes.length}`);
   }
 
   private mapNodeToProject(node: WorkflowyNode, index: number): Project {
