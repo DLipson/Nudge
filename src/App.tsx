@@ -48,6 +48,7 @@ function App() {
     workflowySyncing,
     workflowyError,
     workflowyLastSync,
+    storageDiagnostics,
     getNextTask,
     isSnoozed,
     activeProjects,
@@ -259,6 +260,7 @@ function App() {
       {modal?.type === "settings" && (
         <SettingsModal
           settings={settings}
+          storageDiagnostics={storageDiagnostics}
           onSave={handleSaveSettings}
           onClose={() => setModal(null)}
         />

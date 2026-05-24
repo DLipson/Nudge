@@ -9,11 +9,14 @@ import {
   net,
 } from "electron";
 import path from "path";
+import appConfig from "../app-config.json";
 
 const isDev = !app.isPackaged;
+const startHidden = process.argv.includes("--hidden");
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+let isQuitting = false;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -38,11 +41,17 @@ function createWindow(): void {
   }
 
   mainWindow.once("ready-to-show", () => {
-    mainWindow!.show();
+    if (!startHidden) {
+      mainWindow!.show();
+    }
   });
 
   // Minimize to tray on close instead of quitting
   mainWindow.on("close", (event) => {
+    if (isQuitting) {
+      return;
+    }
+
     event.preventDefault();
     mainWindow!.hide();
   });
@@ -57,23 +66,24 @@ function createTray(): void {
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
-    {
-      label: "Show Nudge",
-      click: () => {
-        mainWindow?.show();
-        mainWindow?.focus();
-      },
-    },
+        {
+            label: `Show ${appConfig.appDisplayName}`,
+            click: () => {
+                mainWindow?.show();
+                mainWindow?.focus();
+            },
+        },
     { type: "separator" },
     {
       label: "Quit",
       click: () => {
-        app.exit(0);
+        isQuitting = true;
+        app.quit();
       },
     },
   ]);
 
-  tray.setToolTip("Nudge");
+  tray.setToolTip(appConfig.appDisplayName);
   tray.setContextMenu(contextMenu);
 
   tray.on("double-click", () => {
@@ -131,6 +141,28 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle("app:getInfo", () => {
+  return {
+    appName: appConfig.appDisplayName,
+    userDataPath: app.getPath("userData"),
+    localStorageKey: appConfig.storage.localStorageKey,
+  };
+});
+
+ipcMain.handle("app:getLaunchOnStartup", () => {
+  return app.getLoginItemSettings().openAtLogin;
+});
+
+ipcMain.handle("app:setLaunchOnStartup", (_event, enabled: boolean) => {
+  app.setLoginItemSettings({
+    openAtLogin: enabled,
+    openAsHidden: enabled,
+    args: enabled ? ["--hidden"] : [],
+  });
+
+  return app.getLoginItemSettings().openAtLogin;
+});
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
@@ -149,4 +181,8 @@ app.whenReady().then(() => {
 // Keep running in tray — don't quit when all windows are closed
 app.on("window-all-closed", () => {
   // intentionally empty: app lives in system tray
+});
+
+app.on("before-quit", () => {
+  isQuitting = true;
 });

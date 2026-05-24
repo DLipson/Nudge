@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && npm run electron:compile && electron dist-electron/main.js\"",
+    "dev": "concurrently -k \"vite\" \"npm run electron:watch\" \"wait-on http://localhost:3000 file:dist-electron/main.js && electron dist-electron/main.js\"",
     "electron:compile": "tsc -p electron/tsconfig.json",
+    "electron:watch": "tsc -w -p electron/tsconfig.json",
     "build": "tsc && vite build && tsc -p electron/tsconfig.json",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",

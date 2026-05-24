@@ -1,20 +1,29 @@
 import { useState } from "react";
 import { Modal } from "./Modal";
 import { Toggle } from "./Toggle";
-import type { Settings, WorkflowyConfig } from "../types";
+import type { Settings, WorkflowyConfig, StorageDiagnostics } from "../types";
 import { DEFAULT_WORKFLOWY_CONFIG } from "../types";
 import { WorkflowyAdapter } from "../adapters/WorkflowyAdapter";
 
 interface SettingsModalProps {
   settings: Settings;
+  storageDiagnostics: StorageDiagnostics | null;
   onSave: (settings: Partial<Settings>) => void;
   onClose: () => void;
 }
 
-export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps) {
+export function SettingsModal({
+  settings,
+  storageDiagnostics,
+  onSave,
+  onClose,
+}: SettingsModalProps) {
   const [nudgeMinutes, setNudgeMinutes] = useState(settings.nudgeMinutes);
   const [autoAdvance, setAutoAdvance] = useState(settings.autoAdvance);
   const [showCompleted, setShowCompleted] = useState(settings.showCompleted);
+  const [launchOnStartup, setLaunchOnStartup] = useState(
+    settings.launchOnStartup
+  );
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     settings.notificationsEnabled
   );
@@ -69,6 +78,7 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
       nudgeMinutes,
       autoAdvance,
       showCompleted,
+      launchOnStartup,
       notificationsEnabled,
       maxNotificationFrequency,
       quietHoursStart,
@@ -162,6 +172,14 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
           </div>
         </div>
         <Toggle on={showCompleted} onChange={setShowCompleted} />
+      </div>
+
+      <div className="setting-row">
+        <div>
+          <div className="setting-label">Start automatically on startup</div>
+          <div className="setting-sub">Launch Nudge in the tray when you sign in</div>
+        </div>
+        <Toggle on={launchOnStartup} onChange={setLaunchOnStartup} />
       </div>
 
       {/* Notification Settings */}
@@ -368,6 +386,34 @@ export function SettingsModal({ settings, onSave, onClose }: SettingsModalProps)
           </div>
         </>
       )}
+
+      <div style={sectionHeaderStyle}>Storage Diagnostics</div>
+      <div
+        style={{
+          padding: 12,
+          background: "rgba(255,255,255,0.04)",
+          borderRadius: 8,
+          fontSize: 12,
+          color: "#888",
+          lineHeight: 1.6,
+        }}
+      >
+        <div><strong style={{ color: "#f0f0f0" }}>State source:</strong> {storageDiagnostics?.stateSource ?? "unknown"}</div>
+        <div><strong style={{ color: "#f0f0f0" }}>Storage key:</strong> <code>{storageDiagnostics?.storageKey ?? "unknown"}</code></div>
+        <div><strong style={{ color: "#f0f0f0" }}>User data path:</strong> <code>{storageDiagnostics?.appStoragePath ?? "browser localStorage"}</code></div>
+        <div><strong style={{ color: "#f0f0f0" }}>Projects loaded:</strong> {storageDiagnostics?.projectCount ?? 0}</div>
+        <div><strong style={{ color: "#f0f0f0" }}>Workflowy enabled:</strong> {storageDiagnostics?.workflowyEnabled ? "yes" : "no"}</div>
+        {storageDiagnostics?.stateSource === "empty" && (
+          <div style={{ color: "#f0b450", marginTop: 8 }}>
+            No persisted app state was found. Nudge started from an empty state instead of seeding demo data.
+          </div>
+        )}
+        {storageDiagnostics?.stateSource === "invalid" && (
+          <div style={{ color: "#f05050", marginTop: 8 }}>
+            Persisted state exists but could not be parsed. Check the storage key and stored payload before changing app identity or storage behavior.
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
