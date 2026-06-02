@@ -10,6 +10,11 @@ import {
 } from "electron";
 import path from "path";
 import appConfig from "../app-config.json";
+import {
+  getStartupLaunchOptions,
+  getStartupLoginItemOptions,
+  type StartupLaunchConfig,
+} from "./startup";
 
 const isDev = !app.isPackaged;
 const startHidden = process.argv.includes("--hidden");
@@ -17,6 +22,45 @@ const startHidden = process.argv.includes("--hidden");
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+function getStartupLaunchConfig(): StartupLaunchConfig {
+  return {
+    appPath: app.getAppPath(),
+    executablePath: process.execPath,
+    isPackaged: app.isPackaged,
+  };
+}
+
+function getLaunchOnStartup(): boolean {
+  const launchConfig = getStartupLaunchConfig();
+
+  return (
+    app.getLoginItemSettings(getStartupLaunchOptions(launchConfig))
+      .openAtLogin || app.getLoginItemSettings().openAtLogin
+  );
+}
+
+function setLaunchOnStartup(enabled: boolean): boolean {
+  const launchConfig = getStartupLaunchConfig();
+
+  if (!enabled) {
+    app.setLoginItemSettings({
+      openAtLogin: false,
+      openAsHidden: false,
+      args: [],
+    });
+  }
+
+  app.setLoginItemSettings(getStartupLoginItemOptions(enabled, launchConfig));
+
+  return getLaunchOnStartup();
+}
+
+function syncLaunchOnStartupRegistration(): void {
+  if (getLaunchOnStartup()) {
+    setLaunchOnStartup(true);
+  }
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -150,22 +194,17 @@ ipcMain.handle("app:getInfo", () => {
 });
 
 ipcMain.handle("app:getLaunchOnStartup", () => {
-  return app.getLoginItemSettings().openAtLogin;
+  return getLaunchOnStartup();
 });
 
 ipcMain.handle("app:setLaunchOnStartup", (_event, enabled: boolean) => {
-  app.setLoginItemSettings({
-    openAtLogin: enabled,
-    openAsHidden: enabled,
-    args: enabled ? ["--hidden"] : [],
-  });
-
-  return app.getLoginItemSettings().openAtLogin;
+  return setLaunchOnStartup(enabled);
 });
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  syncLaunchOnStartupRegistration();
   createWindow();
   createTray();
 

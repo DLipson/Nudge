@@ -19,3 +19,13 @@
 **Fix** - Added source-prefixed timing keys in the form `<sourceId>:<taskId>` and synchronized active task timing against the combined local and Workflowy project list.
 
 **Verification** - Added regression coverage in `taskTiming.test.ts` for source-prefixed keys, Workflowy renames with stable node IDs, legacy raw ID migration, and identical IDs from different sources.
+
+## 2026-06-01 - Login startup launched Electron without the app
+
+**Bug** - When Nudge started on login from the development checkout, Electron opened its default "path-to-app" help screen instead of launching Nudge hidden in the tray.
+
+**Root Cause** - The Windows login item registered `electron.exe` with only `--hidden`. For an unpackaged Electron app, the executable also needs the app path as the first argument.
+
+**Fix** - Added shared startup launch option helpers and used them for both reading and writing the login item. Unpackaged launches now register `electron.exe` with the app path and `--hidden`; packaged launches keep using the packaged executable with `--hidden`. Existing enabled startup registrations are rewritten when the app opens.
+
+**Verification** - Added regression coverage in `electron/startup.test.ts`. Confirmed with `npm test -- --run electron/startup.test.ts`, `npm test -- --run`, and `npm run build`.
