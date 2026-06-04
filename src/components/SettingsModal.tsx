@@ -30,6 +30,11 @@ export function SettingsModal({
   const [maxNotificationFrequency, setMaxNotificationFrequency] = useState(
     settings.maxNotificationFrequency
   );
+  const [notificationDurationSeconds, setNotificationDurationSeconds] =
+    useState(settings.notificationDurationSeconds);
+  const [notificationAutoDismiss, setNotificationAutoDismiss] = useState(
+    settings.notificationAutoDismiss
+  );
   const [quietHoursStart, setQuietHoursStart] = useState(
     settings.quietHoursStart
   );
@@ -81,6 +86,8 @@ export function SettingsModal({
       launchOnStartup,
       notificationsEnabled,
       maxNotificationFrequency,
+      notificationDurationSeconds,
+      notificationAutoDismiss,
       quietHoursStart,
       quietHoursEnd,
       nudgeTone,
@@ -213,6 +220,44 @@ export function SettingsModal({
             )
           }
           style={inputStyle}
+        />
+      </div>
+
+      <div className="setting-row">
+        <div>
+          <div className="setting-label">Dismiss notifications automatically</div>
+          <div className="setting-sub">
+            Turn off to keep nudges visible until dismissed
+          </div>
+        </div>
+        <Toggle
+          on={notificationAutoDismiss}
+          onChange={setNotificationAutoDismiss}
+        />
+      </div>
+
+      <div className="setting-row">
+        <div>
+          <div className="setting-label">Notification duration (seconds)</div>
+          <div className="setting-sub">
+            How long auto-dismissed nudges stay visible
+          </div>
+        </div>
+        <input
+          type="number"
+          min="1"
+          max="300"
+          disabled={!notificationAutoDismiss}
+          value={notificationDurationSeconds}
+          onChange={(e) =>
+            setNotificationDurationSeconds(
+              Math.min(300, Math.max(1, parseInt(e.target.value) || 8))
+            )
+          }
+          style={{
+            ...inputStyle,
+            opacity: notificationAutoDismiss ? 1 : 0.45,
+          }}
         />
       </div>
 

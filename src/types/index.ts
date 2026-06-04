@@ -18,7 +18,11 @@ declare global {
       }>;
       getLaunchOnStartup: () => Promise<boolean>;
       setLaunchOnStartup: (enabled: boolean) => Promise<boolean>;
-      showNotification: (title: string, body: string) => void;
+      showNotification: (
+        title: string,
+        body: string,
+        options?: NotificationOptions
+      ) => void;
     };
   }
 }
@@ -53,6 +57,11 @@ export interface WorkflowyConfig {
   searchPaths: string; // Comma-separated paths to search, e.g. "Life > Work, Life > Personal"
 }
 
+export interface NotificationOptions {
+  autoDismiss: boolean;
+  durationMs: number;
+}
+
 export interface Settings {
   nudgeMinutes: number; // Default nudge interval for new projects
   autoAdvance: boolean; // Show toast with next task on completion
@@ -61,6 +70,8 @@ export interface Settings {
   // Notification settings
   notificationsEnabled: boolean;
   maxNotificationFrequency: number; // Minutes between any notifications
+  notificationDurationSeconds: number;
+  notificationAutoDismiss: boolean;
   projectCooldown: number; // Minutes before re-nudging same project
   quietHoursStart: number; // Hour (0-23) when quiet hours begin
   quietHoursEnd: number; // Hour (0-23) when quiet hours end
@@ -109,6 +120,8 @@ export const DEFAULT_SETTINGS: Settings = {
   showCompleted: true,
   notificationsEnabled: true,
   maxNotificationFrequency: 10, // 10 minutes between any notifications
+  notificationDurationSeconds: 8,
+  notificationAutoDismiss: true,
   projectCooldown: 30, // 30 minutes before re-nudging same project
   quietHoursStart: 22, // 10 PM
   quietHoursEnd: 8, // 8 AM

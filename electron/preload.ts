@@ -19,6 +19,11 @@ interface AppInfo {
   localStorageKey: string;
 }
 
+interface NotificationOptions {
+  autoDismiss: boolean;
+  durationMs: number;
+}
+
 contextBridge.exposeInMainWorld("electronAPI", {
   isElectron: true as const,
 
@@ -33,7 +38,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setLaunchOnStartup: (enabled: boolean): Promise<boolean> =>
     ipcRenderer.invoke("app:setLaunchOnStartup", enabled),
 
-  showNotification: (title: string, body: string): void => {
-    ipcRenderer.invoke("notification:show", title, body);
+  showNotification: (
+    title: string,
+    body: string,
+    options?: NotificationOptions
+  ): void => {
+    ipcRenderer.invoke("notification:show", title, body, options);
   },
 });

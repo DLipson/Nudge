@@ -144,6 +144,32 @@ interface FetchOptions {
   body?: string;
 }
 
+interface NotificationOptions {
+  autoDismiss?: boolean;
+  durationMs?: number;
+}
+
+const DEFAULT_NOTIFICATION_DURATION_MS = 8_000;
+const MIN_NOTIFICATION_DURATION_MS = 1_000;
+const MAX_NOTIFICATION_DURATION_MS = 300_000;
+
+function getNotificationOptions(
+  options?: NotificationOptions
+): Required<NotificationOptions> {
+  const durationMs =
+    typeof options?.durationMs === "number" && Number.isFinite(options.durationMs)
+      ? Math.min(
+          MAX_NOTIFICATION_DURATION_MS,
+          Math.max(MIN_NOTIFICATION_DURATION_MS, options.durationMs)
+        )
+      : DEFAULT_NOTIFICATION_DURATION_MS;
+
+  return {
+    autoDismiss: options?.autoDismiss !== false,
+    durationMs,
+  };
+}
+
 // Workflowy API requests — no CORS restrictions in the main process
 ipcMain.handle(
   "workflowy:fetch",
@@ -171,10 +197,15 @@ ipcMain.handle(
 // OS-level native notifications
 ipcMain.handle(
   "notification:show",
-  (_event, title: string, body: string) => {
+  (_event, title: string, body: string, options?: NotificationOptions) => {
     if (!Notification.isSupported()) return;
 
-    const notification = new Notification({ title, body });
+    const notificationOptions = getNotificationOptions(options);
+    const notification = new Notification({
+      title,
+      body,
+      timeoutType: notificationOptions.autoDismiss ? "default" : "never",
+    });
 
     notification.on("click", () => {
       mainWindow?.show();
@@ -182,6 +213,10 @@ ipcMain.handle(
     });
 
     notification.show();
+
+    if (notificationOptions.autoDismiss) {
+      setTimeout(() => notification.close(), notificationOptions.durationMs);
+    }
   }
 );
 

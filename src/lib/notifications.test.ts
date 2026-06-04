@@ -102,6 +102,22 @@ describe("sendNudge", () => {
     expect(body).toContain(task.name);
   });
 
+  it("passes dismissal settings to the notification", () => {
+    sendNudge(project, task, {
+      ...settings,
+      notificationAutoDismiss: false,
+      notificationDurationSeconds: 45,
+    });
+
+    const [, , options] = (
+      window.electronAPI!.showNotification as ReturnType<typeof vi.fn>
+    ).mock.calls[0];
+    expect(options).toEqual({
+      autoDismiss: false,
+      durationMs: 45_000,
+    });
+  });
+
   it("returns false and does not send when blocked by cooldown", () => {
     sendNudge(project, task, settings);
     const sent = sendNudge(project, task, settings);

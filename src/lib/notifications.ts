@@ -82,6 +82,9 @@ export function sendNudge(project: Project, task: Task, settings: Settings): boo
   notificationState.lastNotificationTime = now;
   notificationState.projectLastNotified[project.id] = now;
 
-  window.electronAPI!.showNotification(title, body);
+  window.electronAPI!.showNotification(title, body, {
+    autoDismiss: settings.notificationAutoDismiss,
+    durationMs: settings.notificationDurationSeconds * 1_000,
+  });
   return true;
 }
