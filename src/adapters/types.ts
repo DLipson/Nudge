@@ -84,21 +84,3 @@ export interface TaskSourceAdapter {
   /** Perform a full sync with the external source */
   sync(): Promise<void>;
 }
-
-/**
- * Adapter configuration type
- * Each adapter may require different configuration options
- */
-export interface AdapterConfig {
-  [key: string]: unknown;
-}
-
-/**
- * Adapter registry entry
- */
-export interface AdapterRegistryEntry {
-  id: string;
-  name: string;
-  description: string;
-  createAdapter: (config?: AdapterConfig) => TaskSourceAdapter;
-}

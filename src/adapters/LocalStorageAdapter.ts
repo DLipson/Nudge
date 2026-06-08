@@ -221,11 +221,6 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
 
   // ── Additional methods for local state management ─────────────────────────
 
-  getSettings(): Settings {
-    if (!this.state) throw new Error("Adapter not connected");
-    return this.state.settings;
-  }
-
   updateSettings(settings: Partial<Settings>): void {
     if (!this.state) throw new Error("Adapter not connected");
     Object.assign(this.state.settings, settings);
@@ -235,12 +230,6 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
   getTaskStartTimes(): Record<string, number> {
     if (!this.state) throw new Error("Adapter not connected");
     return this.state.taskStartTimes;
-  }
-
-  setTaskStartTime(taskKey: string, time: number): void {
-    if (!this.state) throw new Error("Adapter not connected");
-    this.state.taskStartTimes[taskKey] = time;
-    this.persist();
   }
 
   syncTaskStartTimes(projects: Project[]): boolean {
