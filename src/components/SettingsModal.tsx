@@ -459,7 +459,7 @@ export function SettingsModal({
         <div><strong style={{ color: "#f0f0f0" }}>Workflowy enabled:</strong> {storageDiagnostics?.workflowyEnabled ? "yes" : "no"}</div>
         {storageDiagnostics?.stateSource === "empty" && (
           <div style={{ color: "#f0b450", marginTop: 8 }}>
-            No persisted app state was found. Nudge started from an empty state instead of seeding demo data.
+            No persisted app state was found. Nudge started from an empty state.
           </div>
         )}
         {storageDiagnostics?.stateSource === "invalid" && (
