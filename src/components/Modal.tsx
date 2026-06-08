@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { ReactNode, MouseEvent } from "react";
 
 interface ModalProps {
@@ -8,8 +9,18 @@ interface ModalProps {
 }
 
 export function Modal({ title, children, footer, onClose }: ModalProps) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   const handleBackdropClick = (e: MouseEvent) => {
-    if ((e.target as HTMLElement).className === "backdrop") {
+    // Only a click on the backdrop itself (not a bubbled click from the modal
+    // body) should dismiss.
+    if (e.target === e.currentTarget) {
       onClose();
     }
   };
