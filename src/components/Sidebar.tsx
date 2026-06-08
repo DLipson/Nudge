@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import type { Project } from "../types";
+import { nextIncompleteTask } from "../lib/nudge";
 
 interface SidebarProps {
   projects: Project[];
@@ -12,10 +13,6 @@ interface SidebarProps {
   onNewProject: () => void;
   onOpenSettings: () => void;
   onSyncWorkflowy?: () => void;
-}
-
-function nextTask(project: Project) {
-  return project.tasks.find((t) => !t.done) ?? null;
 }
 
 function hasIncompleteTasks(project: Project) {
@@ -66,7 +63,7 @@ export function Sidebar({
 
         {/* Combined project list: local first, then Workflowy */}
         {[...localProjects, ...workflowyProjects].map((p) => {
-          const next = nextTask(p);
+          const next = nextIncompleteTask(p);
 
           return (
             <NavLink

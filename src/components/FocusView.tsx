@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Project, Settings } from "../types";
 import { calculateNudgeSchedule, taskAge } from "../lib/time";
 import { getNotificationState, subscribeNotificationState } from "../lib/notifications";
+import { nextIncompleteTask, isSnoozed, getNudgeLevel } from "../lib/nudge";
 
 interface FocusViewProps {
   projects: Project[];
@@ -13,14 +14,6 @@ interface FocusViewProps {
   onSkip: (projectId: string, taskId: string) => void;
   onTriggerNudge: () => void;
   showToast: (message: string) => void;
-}
-
-function nextTask(project: Project) {
-  return project.tasks.find((t) => !t.done) ?? null;
-}
-
-function isSnoozed(task: { snoozedUntil: number | null }) {
-  return task.snoozedUntil !== null && task.snoozedUntil > Date.now();
 }
 
 function formatNudgeTime(ms: number): string {
@@ -55,17 +48,16 @@ export function FocusView({
 }: FocusViewProps) {
   const navigate = useNavigate();
   const activeProjects = useMemo(
-    () => projects.filter((p) => p.active && nextTask(p)),
+    () => projects.filter((p) => p.active && nextIncompleteTask(p)),
     [projects]
   );
 
   const needsAttention = useMemo(
     () =>
       activeProjects.filter((p) => {
-        const n = nextTask(p);
+        const n = nextIncompleteTask(p);
         if (!n || isSnoozed(n)) return false;
-        const age = taskAge(n, taskStartTimes);
-        return age / (p.nudgeMinutes * 60_000) >= 0.7;
+        return getNudgeLevel(taskAge(n, taskStartTimes), p.nudgeMinutes) !== "ok";
       }).length,
     [activeProjects, taskStartTimes]
   );
@@ -90,7 +82,7 @@ export function FocusView({
         taskStartTimes,
         settings,
         isSnoozed,
-        getNextTask: nextTask,
+        getNextTask: nextIncompleteTask,
         lastNotificationTime: notifState.lastNotificationTime,
         projectLastNotified: notifState.projectLastNotified,
         now,
@@ -126,9 +118,9 @@ export function FocusView({
         <div className="topbar-meta">
           {activeProjects.length} active
           {needsAttention > 0
-            ? ` \u00B7 ${needsAttention} need attention`
-            : " \u00B7 all on track"}
-          {soonestNudge !== null && ` \u00B7 ${formatNudgeTime(soonestNudge)}`}
+            ? ` · ${needsAttention} need attention`
+            : " · all on track"}
+          {soonestNudge !== null && ` · ${formatNudgeTime(soonestNudge)}`}
           <span
             onClick={onTriggerNudge}
             style={{
@@ -155,7 +147,7 @@ export function FocusView({
         ) : (
           <div className="focus-list">
             {sortedProjects.map((p) => {
-              const n = nextTask(p);
+              const n = nextIncompleteTask(p);
               const snoozed = n ? isSnoozed(n) : false;
               const nudgeMs = n ? (nudgeSchedule.result.get(p.id) ?? null) : null;
 

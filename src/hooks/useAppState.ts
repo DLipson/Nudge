@@ -14,6 +14,7 @@ import {
   loadSnoozeOverlay,
   saveSnoozeOverlay,
 } from "../lib/snoozeOverlay";
+import { nextIncompleteTask, isSnoozed as taskIsSnoozed } from "../lib/nudge";
 
 /**
  * Main application state hook
@@ -450,13 +451,15 @@ export function useAppState(): UseAppStateReturn {
 
   // ── Computed helpers ──────────────────────────────────────────────────────
 
-  const getNextTask = useCallback((project: Project): Task | null => {
-    return project.tasks.find((t) => !t.done) ?? null;
-  }, []);
+  const getNextTask = useCallback(
+    (project: Project): Task | null => nextIncompleteTask(project),
+    []
+  );
 
-  const isSnoozed = useCallback((task: Task): boolean => {
-    return task.snoozedUntil !== null && task.snoozedUntil > Date.now();
-  }, []);
+  const isSnoozed = useCallback(
+    (task: Task): boolean => taskIsSnoozed(task),
+    []
+  );
 
   // Combine local and Workflowy projects
   const allProjects = useMemo(() => {

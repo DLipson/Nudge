@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Project, Task } from "../types";
 import { formatDate, formatDuration } from "../lib/time";
+import { nextIncompleteTask, isSnoozed } from "../lib/nudge";
 
 interface TaskListProps {
   project: Project;
@@ -12,14 +13,6 @@ interface TaskListProps {
   onDelete: (taskId: string) => void;
   onReorder: (taskId: string, newIndex: number) => void;
   onAddTask: () => void;
-}
-
-function isSnoozed(task: Task): boolean {
-  return task.snoozedUntil !== null && task.snoozedUntil > Date.now();
-}
-
-function nextTask(project: Project): Task | null {
-  return project.tasks.find((t) => !t.done) ?? null;
 }
 
 // Pencil/Edit icon SVG
@@ -72,7 +65,7 @@ export function TaskList({
   onReorder,
   onAddTask,
 }: TaskListProps) {
-  const activeTask = nextTask(project);
+  const activeTask = nextIncompleteTask(project);
   const visible = project.tasks.filter((t) => !t.done || showCompleted);
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
