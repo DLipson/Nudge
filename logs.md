@@ -29,3 +29,13 @@
 **Fix** - Added shared startup launch option helpers and used them for both reading and writing the login item. Unpackaged launches now register `electron.exe` with the app path and `--hidden`; packaged launches keep using the packaged executable with `--hidden`. Existing enabled startup registrations are rewritten when the app opens.
 
 **Verification** - Added regression coverage in `electron/startup.test.ts`. Confirmed with `npm test -- --run electron/startup.test.ts`, `npm test -- --run`, and `npm run build`.
+
+## 2026-06-08 - Login startup split app paths with spaces
+
+**Bug** - When Nudge started on login, Electron showed "Unable to find Electron app at C:\Users\Dovid" because the app path was split at the space in `Dovid L`.
+
+**Root Cause** - The startup registration passed the unpackaged app path as a raw argument. Windows login startup did not preserve that path as one argument when it contained spaces.
+
+**Fix** - Quoted unpackaged app path arguments before registering the Electron login item.
+
+**Verification** - Added regression coverage in `electron/startup.test.ts` for app paths containing spaces. Confirmed with `npm test -- --run electron/startup.test.ts`, `npm test -- --run`, and `npm run build`.

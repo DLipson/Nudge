@@ -16,6 +16,14 @@ export interface StartupLoginItemOptions extends StartupLaunchOptions {
 
 const hiddenArg = "--hidden";
 
+function quoteShellArgument(argument: string): string {
+  if (!/\s/.test(argument)) {
+    return argument;
+  }
+
+  return `"${argument.replace(/"/g, '\\"')}"`;
+}
+
 export function getStartupLaunchOptions({
   appPath,
   executablePath,
@@ -29,7 +37,7 @@ export function getStartupLaunchOptions({
 
   return {
     path: executablePath,
-    args: [appPath, hiddenArg],
+    args: [quoteShellArgument(appPath), hiddenArg],
   };
 }
 

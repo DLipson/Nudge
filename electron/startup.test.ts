@@ -12,7 +12,20 @@ describe("getStartupLaunchOptions", () => {
 
     expect(options).toEqual({
       path: "C:\\Users\\Dovid L\\Dev\\My Cool Projects\\Nudge\\node_modules\\electron\\dist\\electron.exe",
-      args: ["C:\\Users\\Dovid L\\Dev\\My Cool Projects\\Nudge", "--hidden"],
+      args: ['"C:\\Users\\Dovid L\\Dev\\My Cool Projects\\Nudge"', "--hidden"],
     });
+  });
+
+  it("quotes unpackaged app paths that contain spaces", () => {
+    const options = getStartupLaunchOptions({
+      appPath: "C:\\Users\\Dovid L\\Dev\\My Cool Projects\\Nudge",
+      executablePath:
+        "C:\\Users\\Dovid L\\Dev\\My Cool Projects\\Nudge\\node_modules\\electron\\dist\\electron.exe",
+      isPackaged: false,
+    });
+
+    expect(options.args[0]).toBe(
+      '"C:\\Users\\Dovid L\\Dev\\My Cool Projects\\Nudge"'
+    );
   });
 });
