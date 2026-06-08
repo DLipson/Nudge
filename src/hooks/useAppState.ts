@@ -218,7 +218,7 @@ export function useAppState(): UseAppStateReturn {
   const addProject = useCallback(
     async (name: string, color: string, nudgeMinutes: number) => {
       const adp = getLocalAdapter();
-      const project = await adp.addProject!(name, color, nudgeMinutes);
+      const project = await adp.addProject(name, color, nudgeMinutes);
       refresh();
       return project;
     },
@@ -233,7 +233,7 @@ export function useAppState(): UseAppStateReturn {
       nudgeMinutes: number
     ) => {
       const adp = getLocalAdapter();
-      await adp.updateProject!(projectId, name, color, nudgeMinutes);
+      await adp.updateProject(projectId, name, color, nudgeMinutes);
       refresh();
     },
     [refresh]
@@ -242,7 +242,7 @@ export function useAppState(): UseAppStateReturn {
   const deleteProject = useCallback(
     async (projectId: string) => {
       const adp = getLocalAdapter();
-      await adp.deleteProject!(projectId);
+      await adp.deleteProject(projectId);
       refresh();
     },
     [refresh]
@@ -274,7 +274,7 @@ export function useAppState(): UseAppStateReturn {
   const addTask = useCallback(
     async (projectId: string, name: string, description: string) => {
       const adp = getLocalAdapter();
-      const task = await adp.addTask!(projectId, name, description);
+      const task = await adp.addTask(projectId, name, description);
       refresh();
       return task;
     },
@@ -284,7 +284,7 @@ export function useAppState(): UseAppStateReturn {
   const updateTask = useCallback(
     async (taskId: string, name: string, description: string) => {
       const adp = getLocalAdapter();
-      await adp.updateTask!(taskId, name, description);
+      await adp.updateTask(taskId, name, description);
       refresh();
     },
     [refresh]
@@ -293,7 +293,7 @@ export function useAppState(): UseAppStateReturn {
   const deleteTask = useCallback(
     async (taskId: string) => {
       const adp = getLocalAdapter();
-      await adp.deleteTask!(taskId);
+      await adp.deleteTask(taskId);
       refresh();
     },
     [refresh]
@@ -318,7 +318,7 @@ export function useAppState(): UseAppStateReturn {
         }
       } else {
         const adp = getLocalAdapter();
-        await adp.completeTask!(taskId);
+        await adp.completeTask(taskId);
         refresh();
       }
     },
@@ -344,7 +344,7 @@ export function useAppState(): UseAppStateReturn {
         }
       } else {
         const adp = getLocalAdapter();
-        await adp.uncompleteTask!(taskId);
+        await adp.uncompleteTask(taskId);
         refresh();
       }
     },
