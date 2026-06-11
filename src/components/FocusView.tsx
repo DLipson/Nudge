@@ -5,7 +5,6 @@ import { taskAge } from "../lib/time";
 interface FocusViewProps {
   projects: Project[];
   taskStartTimes: Record<string, number>;
-  autoAdvance: boolean;
   onComplete: (taskId: string) => void;
   onSnooze: (taskId: string, minutes: number) => void;
   onSkip: (projectId: string, taskId: string) => void;
@@ -23,7 +22,6 @@ function isSnoozed(task: { snoozedUntil: number | null }) {
 export function FocusView({
   projects,
   taskStartTimes,
-  autoAdvance,
   onComplete,
   onSnooze,
   onSkip,
@@ -91,9 +89,7 @@ export function FocusView({
                         onClick={() => {
                           onComplete(n.id);
                           const nextNext = p.tasks.find((t) => !t.done && t.id !== n.id);
-                          if (autoAdvance) {
-                            showToast(nextNext ? `Done! Next: ${nextNext.name}` : "All tasks complete!");
-                          }
+                          showToast(nextNext ? `Done! Next: ${nextNext.name}` : "All tasks complete!");
                         }}
                       >
                         Done

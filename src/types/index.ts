@@ -64,7 +64,6 @@ export interface NotificationOptions {
 
 export interface Settings {
   nudgeMinutes: number; // Default nudge interval for new projects
-  autoAdvance: boolean; // Show toast with next task on completion
   showCompleted: boolean; // Display done tasks in project view
 
   // Notification settings
@@ -116,7 +115,6 @@ export const DEFAULT_WORKFLOWY_CONFIG: WorkflowyConfig = {
 // Default settings
 export const DEFAULT_SETTINGS: Settings = {
   nudgeMinutes: 25,
-  autoAdvance: true,
   showCompleted: true,
   notificationsEnabled: true,
   maxNotificationFrequency: 10, // 10 minutes between any notifications

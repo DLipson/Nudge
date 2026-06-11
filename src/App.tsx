@@ -219,7 +219,6 @@ function App() {
               <FocusView
                 projects={activeProjects}
                 taskStartTimes={taskStartTimes}
-                autoAdvance={settings.autoAdvance}
                 onComplete={completeTask}
                 onSnooze={snoozeTask}
                 onSkip={skipTask}

@@ -19,7 +19,6 @@ export function SettingsModal({
   onClose,
 }: SettingsModalProps) {
   const [nudgeMinutes, setNudgeMinutes] = useState(settings.nudgeMinutes);
-  const [autoAdvance, setAutoAdvance] = useState(settings.autoAdvance);
   const [showCompleted, setShowCompleted] = useState(settings.showCompleted);
   const [launchOnStartup, setLaunchOnStartup] = useState(
     settings.launchOnStartup
@@ -81,7 +80,6 @@ export function SettingsModal({
 
     onSave({
       nudgeMinutes,
-      autoAdvance,
       showCompleted,
       launchOnStartup,
       notificationsEnabled,
@@ -161,14 +159,6 @@ export function SettingsModal({
           }
           style={inputStyle}
         />
-      </div>
-
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Auto-advance on complete</div>
-          <div className="setting-sub">Show a toast with the next task name</div>
-        </div>
-        <Toggle on={autoAdvance} onChange={setAutoAdvance} />
       </div>
 
       <div className="setting-row">
