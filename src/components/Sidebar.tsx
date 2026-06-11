@@ -74,12 +74,6 @@ export function Sidebar({
         >
           &#9678; Focus
         </NavLink>
-        <NavLink
-          to="/projects"
-          className={({ isActive }) => `sb-item ${isActive ? "active" : ""}`}
-        >
-          &#8862; All projects
-        </NavLink>
 
         <div className="sb-section">Projects</div>
         {localProjects.map((p) => {

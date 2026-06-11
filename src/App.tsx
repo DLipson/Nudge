@@ -1,12 +1,11 @@
 import { useState, useCallback, useRef } from "react";
-import { Routes, Route, useNavigate, useParams } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAppState } from "./hooks/useAppState";
 import { useNotifications } from "./hooks/useNotifications";
 import { useNudgeTimer } from "./hooks/useNudgeTimer";
 import {
   Sidebar,
   FocusView,
-  AllProjectsView,
   ProjectView,
   ProjectNotFound,
   ProjectModal,
@@ -228,15 +227,7 @@ function App() {
               />
             }
           />
-          <Route
-            path="/projects"
-            element={
-              <AllProjectsView
-                projects={projects}
-                onNewProject={handleNewProject}
-              />
-            }
-          />
+          <Route path="/projects" element={<Navigate to="/" replace />} />
           <Route path="/project/:id" element={<ProjectDetailWrapper />} />
         </Routes>
       </div>

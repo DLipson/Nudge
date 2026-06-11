@@ -4,7 +4,6 @@ export { Modal } from "./Modal";
 export { TaskList } from "./TaskList";
 export { Sidebar } from "./Sidebar";
 export { FocusView } from "./FocusView";
-export { AllProjectsView } from "./AllProjectsView";
 export { ProjectView, ProjectNotFound } from "./ProjectView";
 export { ProjectModal } from "./ProjectModal";
 export { TaskModal } from "./TaskModal";
