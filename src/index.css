@@ -256,10 +256,23 @@ body {
   flex: 1;
 }
 
+.focus-list-tail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.focus-list-nudge {
+  font-size: 11px;
+  font-family: monospace;
+  color: #555;
+  flex-shrink: 0;
+}
+
 .focus-list-actions {
   display: flex;
   gap: 6px;
-  margin-left: auto;
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s;
