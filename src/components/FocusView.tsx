@@ -28,7 +28,7 @@ export function FocusView({
   showToast,
 }: FocusViewProps) {
   const navigate = useNavigate();
-  const activeProjects = projects.filter((p) => p.active);
+  const activeProjects = projects.filter((p) => p.active && nextTask(p));
 
   const needsAttention = activeProjects.filter((p) => {
     const n = nextTask(p);
