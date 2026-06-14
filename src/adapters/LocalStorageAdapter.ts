@@ -434,7 +434,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       id: String(proj.id),
       name: String(proj.name),
       color: String(proj.color || COLORS[0]),
-      nudgeMinutes: Number(proj.nudgeMinutes) || 25,
+      nudgeMinutes: Number(proj.nudgeMinutes) || 180,
       active: proj.active !== false,
       tasks,
       sourceId: this.id,

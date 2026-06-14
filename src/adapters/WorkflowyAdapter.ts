@@ -319,7 +319,7 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
       id: node.id,
       name,
       color: COLORS[index % COLORS.length],
-      nudgeMinutes: 25,
+      nudgeMinutes: 180,
       active: true,
       tasks,
       sourceId: this.id,

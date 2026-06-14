@@ -114,7 +114,7 @@ export const DEFAULT_WORKFLOWY_CONFIG: WorkflowyConfig = {
 
 // Default settings
 export const DEFAULT_SETTINGS: Settings = {
-  nudgeMinutes: 25,
+  nudgeMinutes: 180,
   showCompleted: true,
   notificationsEnabled: true,
   maxNotificationFrequency: 10, // 10 minutes between any notifications

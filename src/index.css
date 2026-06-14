@@ -120,23 +120,6 @@ body {
   flex-shrink: 0;
 }
 
-.sb-badge {
-  margin-left: auto;
-  font-size: 10px;
-  font-family: monospace;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 99px;
-  /* Softer amber instead of red for attention states */
-  background: rgba(240, 180, 80, 0.12);
-  color: #f0b450;
-}
-
-.sb-badge.warn {
-  background: rgba(240, 160, 48, 0.12);
-  color: #f0a030;
-}
-
 .sb-add {
   display: flex;
   align-items: center;

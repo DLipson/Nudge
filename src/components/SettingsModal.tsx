@@ -146,19 +146,19 @@ export function SettingsModal({
         <div>
           <div className="setting-label">Default nudge interval</div>
           <div className="setting-sub">
-            Minutes before a task is flagged as slow
+            Minutes before a task needs attention
           </div>
         </div>
-        <input
-          type="number"
-          min="5"
-          max="120"
-          value={nudgeMinutes}
-          onChange={(e) =>
-            setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 25))
-          }
-          style={inputStyle}
-        />
+          <input
+            type="number"
+            min="5"
+            max="480"
+            value={nudgeMinutes}
+            onChange={(e) =>
+              setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 180))
+            }
+            style={inputStyle}
+          />
       </div>
 
       <div className="setting-row">
