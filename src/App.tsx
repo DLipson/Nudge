@@ -181,7 +181,6 @@ function App() {
     <div className="nudge-wrap">
       <Sidebar
         projects={projects}
-        taskStartTimes={taskStartTimes}
         totalDone={totalDone}
         totalTasks={totalTasks}
         workflowyEnabled={settings.workflowy?.enabled}

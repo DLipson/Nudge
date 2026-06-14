@@ -3,7 +3,6 @@ import type { Project } from "../types";
 
 interface SidebarProps {
   projects: Project[];
-  taskStartTimes: Record<string, number>;
   totalDone: number;
   totalTasks: number;
   workflowyEnabled?: boolean;
@@ -32,7 +31,6 @@ function formatSyncAge(ts: number): string {
 
 export function Sidebar({
   projects,
-  taskStartTimes,
   totalDone,
   totalTasks,
   workflowyEnabled,
