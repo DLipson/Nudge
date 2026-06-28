@@ -39,3 +39,15 @@
 **Fix** - Quoted unpackaged app path arguments before registering the Electron login item.
 
 **Verification** - Added regression coverage in `electron/startup.test.ts` for app paths containing spaces. Confirmed with `npm test -- --run electron/startup.test.ts`, `npm test -- --run`, and `npm run build`.
+
+## 2026-06-28 - Login startup registered dist-electron as the app
+
+**Bug** - When Nudge launched from the Windows login startup item in the development checkout, Electron failed with "Unable to find Electron app at ...\Nudge\dist-electron" and "Cannot find module ...\dist-electron".
+
+**Root Cause** - The previous startup registration fix used `app.getAppPath()` as the unpackaged app path. In dev, when Electron is launched with `dist-electron/main.js`, `app.getAppPath()` can resolve to the compiled Electron output directory instead of the project root. Registering that path makes Electron treat `dist-electron` as the app directory on the next login launch, but that directory has no package metadata or app entry.
+
+**Fix** - Added `getUnpackagedStartupAppPath()` to derive the project root from the compiled main-process directory, and used it for unpackaged startup registration. Packaged builds continue to use `app.getAppPath()`.
+
+**Operational Note** - Existing bad login startup registrations may still point at `dist-electron` until Nudge launches normally once and `syncLaunchOnStartupRegistration()` rewrites the enabled registration, or until launch-on-startup is toggled off and back on.
+
+**Verification** - Added regression coverage in `electron/startup.test.ts` for avoiding `dist-electron` as the unpackaged app path. Confirmed with `npm test -- --run electron/startup.test.ts`, `npm test -- --run`, and `npm run build`.
