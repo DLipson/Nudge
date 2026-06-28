@@ -13,6 +13,7 @@ import appConfig from "../app-config.json";
 import {
   getStartupLaunchOptions,
   getStartupLoginItemOptions,
+  getUnpackagedStartupAppPath,
   type StartupLaunchConfig,
 } from "./startup";
 
@@ -25,7 +26,9 @@ let isQuitting = false;
 
 function getStartupLaunchConfig(): StartupLaunchConfig {
   return {
-    appPath: app.getAppPath(),
+    appPath: app.isPackaged
+      ? app.getAppPath()
+      : getUnpackagedStartupAppPath(__dirname),
     executablePath: process.execPath,
     isPackaged: app.isPackaged,
   };

@@ -1,3 +1,5 @@
+import path from "path";
+
 export interface StartupLaunchConfig {
   appPath: string;
   executablePath: string;
@@ -15,6 +17,12 @@ export interface StartupLoginItemOptions extends StartupLaunchOptions {
 }
 
 const hiddenArg = "--hidden";
+
+export function getUnpackagedStartupAppPath(
+  compiledMainDirectory: string
+): string {
+  return path.resolve(compiledMainDirectory, "..");
+}
 
 function quoteShellArgument(argument: string): string {
   if (!/\s/.test(argument)) {
