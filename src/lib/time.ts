@@ -49,7 +49,8 @@ export function taskAge(
   task: Pick<Task, "id" | "sourceId">,
   taskStartTimes: Record<string, number>
 ): number {
-  return Date.now() - (taskStartTimes[taskTimingKey(task)] ?? Date.now());
+  const startedAt = taskStartTimes[taskTimingKey(task)];
+  return startedAt === undefined ? 0 : Date.now() - startedAt;
 }
 
 export function isQuietHoursAt(
