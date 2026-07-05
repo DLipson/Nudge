@@ -1,5 +1,42 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { formatDuration, taskAge, isQuietHours } from "./time";
+import {
+  calculateNudgeSchedule,
+  formatDuration,
+  isQuietHours,
+  isQuietHoursAt,
+  quietHoursEndMs,
+  taskAge,
+} from "./time";
+import { DEFAULT_SETTINGS } from "../types";
+import type { Project, Task } from "../types";
+
+function makeTask(id: string, snoozedUntil: number | null = null): Task {
+  return {
+    id,
+    name: `Task ${id}`,
+    description: "",
+    done: false,
+    completedAt: null,
+    snoozedUntil,
+    sourceId: "local-storage",
+  };
+}
+
+function makeProject(id: string, task: Task, nudgeMinutes = 30): Project {
+  return {
+    id,
+    name: `Project ${id}`,
+    color: "#c8f04a",
+    nudgeMinutes,
+    active: true,
+    tasks: [task],
+    sourceId: "local-storage",
+  };
+}
+
+function firstOpenTask(project: Project): Task | null {
+  return project.tasks.find((task) => !task.done) ?? null;
+}
 
 describe("formatDuration", () => {
   it("formats sub-minute durations as seconds", () => {
@@ -54,7 +91,7 @@ describe("isQuietHours", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  describe("overnight quiet hours (22–8)", () => {
+  describe("overnight quiet hours (22-8)", () => {
     it("is quiet at 23:00", () => {
       vi.setSystemTime(new Date("2024-01-01T23:00:00"));
       expect(isQuietHours(22, 8)).toBe(true);
@@ -81,7 +118,7 @@ describe("isQuietHours", () => {
     });
   });
 
-  describe("same-day quiet hours (13–16)", () => {
+  describe("same-day quiet hours (13-16)", () => {
     it("is quiet at 14:00", () => {
       vi.setSystemTime(new Date("2024-01-01T14:00:00"));
       expect(isQuietHours(13, 16)).toBe(true);
@@ -96,5 +133,90 @@ describe("isQuietHours", () => {
       vi.setSystemTime(new Date("2024-01-01T17:00:00"));
       expect(isQuietHours(13, 16)).toBe(false);
     });
+  });
+});
+
+describe("quiet-hour scheduling helpers", () => {
+  it("checks quiet hours at an explicit time", () => {
+    expect(isQuietHoursAt(22, 8, new Date("2024-01-01T23:00:00").getTime())).toBe(true);
+    expect(isQuietHoursAt(22, 8, new Date("2024-01-02T08:00:00").getTime())).toBe(false);
+  });
+
+  it("returns the next quiet-hours end for an overnight window", () => {
+    const end = new Date(quietHoursEndMs(22, 8, new Date("2024-01-01T23:00:00").getTime()));
+    expect(end.getDate()).toBe(2);
+    expect(end.getHours()).toBe(8);
+    expect(end.getMinutes()).toBe(0);
+  });
+});
+
+describe("calculateNudgeSchedule", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("groups ready projects by nudge batch size", () => {
+    const now = new Date("2024-01-01T12:00:00").getTime();
+    vi.setSystemTime(now);
+
+    const tasks = [makeTask("t1"), makeTask("t2"), makeTask("t3")];
+    const projects = tasks.map((task, index) => makeProject(`p${index + 1}`, task, 30));
+    const schedule = calculateNudgeSchedule({
+      projects,
+      taskStartTimes: {
+        "local-storage:t1": now - 31 * 60_000,
+        "local-storage:t2": now - 31 * 60_000,
+        "local-storage:t3": now - 31 * 60_000,
+      },
+      settings: { ...DEFAULT_SETTINGS, maxNotificationFrequency: 10, nudgeBatchSize: 2 },
+      isSnoozed: (task) => task.snoozedUntil !== null && task.snoozedUntil > now,
+      getNextTask: firstOpenTask,
+      lastNotificationTime: 0,
+      projectLastNotified: {},
+      now,
+    });
+
+    expect(schedule.result.get("p1")).toBe(0);
+    expect(schedule.result.get("p2")).toBe(0);
+    expect(schedule.result.get("p3")).toBe(10 * 60_000);
+  });
+
+  it("accounts for global and project cooldowns", () => {
+    const now = new Date("2024-01-01T12:00:00").getTime();
+    vi.setSystemTime(now);
+
+    const task = makeTask("t1");
+    const project = makeProject("p1", task, 30);
+    const schedule = calculateNudgeSchedule({
+      projects: [project],
+      taskStartTimes: { "local-storage:t1": now - 31 * 60_000 },
+      settings: { ...DEFAULT_SETTINGS, maxNotificationFrequency: 10, projectCooldown: 30 },
+      isSnoozed: (candidate) => candidate.snoozedUntil !== null && candidate.snoozedUntil > now,
+      getNextTask: firstOpenTask,
+      lastNotificationTime: now - 8 * 60_000,
+      projectLastNotified: { p1: now - 25 * 60_000 },
+      now,
+    });
+
+    expect(schedule.result.get("p1")).toBe(5 * 60_000);
+  });
+
+  it("uses snooze expiry as the next nudge time", () => {
+    const now = new Date("2024-01-01T12:00:00").getTime();
+    vi.setSystemTime(now);
+
+    const task = makeTask("t1", now + 15 * 60_000);
+    const project = makeProject("p1", task, 30);
+    const schedule = calculateNudgeSchedule({
+      projects: [project],
+      taskStartTimes: { "local-storage:t1": now - 60 * 60_000 },
+      settings: DEFAULT_SETTINGS,
+      isSnoozed: (candidate) => candidate.snoozedUntil !== null && candidate.snoozedUntil > now,
+      getNextTask: firstOpenTask,
+      lastNotificationTime: 0,
+      projectLastNotified: {},
+      now,
+    });
+
+    expect(schedule.result.get("p1")).toBe(15 * 60_000);
   });
 });

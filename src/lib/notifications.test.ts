@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { canNudge, sendNudge, resetNotificationState } from "./notifications";
+import { canNudge, sendNudge, resetNotificationState, subscribeNotificationState } from "./notifications";
 import { DEFAULT_SETTINGS } from "../types";
 import type { Project, Task } from "../types";
 
@@ -123,5 +123,18 @@ describe("sendNudge", () => {
     const sent = sendNudge(project, task, settings);
     expect(sent).toBe(false);
     expect(window.electronAPI!.showNotification).toHaveBeenCalledOnce();
+  });
+});
+describe("subscribeNotificationState", () => {
+  it("notifies listeners when notification state changes", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeNotificationState(listener);
+
+    sendNudge(project, task, settings);
+    resetNotificationState();
+    unsubscribe();
+    sendNudge(project, task, settings);
+
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 });
