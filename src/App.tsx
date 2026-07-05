@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef } from "react";
-import { Routes, Route, useNavigate, useParams } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAppState } from "./hooks/useAppState";
 import { useNotifications } from "./hooks/useNotifications";
 import { useNudgeTimer } from "./hooks/useNudgeTimer";
+import { triggerNextNudge } from "./lib/notifications";
 import {
   Sidebar,
   FocusView,
-  AllProjectsView,
   ProjectView,
   ProjectNotFound,
   ProjectModal,
@@ -74,6 +74,15 @@ function App() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(""), 2400);
   }, []);
+
+  const handleTriggerNudge = useCallback(() => {
+    const sent = triggerNextNudge(projects, settings, taskStartTimes, getNextTask, isSnoozed);
+    if (sent) {
+      showToast("Nudge triggered");
+    } else {
+      showToast("No nudgeable projects");
+    }
+  }, [projects, settings, taskStartTimes, getNextTask, isSnoozed, showToast]);
 
   // Computed totals for sidebar
   const totalDone = activeProjects.reduce(
@@ -182,7 +191,6 @@ function App() {
     <div className="nudge-wrap">
       <Sidebar
         projects={projects}
-        taskStartTimes={taskStartTimes}
         totalDone={totalDone}
         totalTasks={totalTasks}
         workflowyEnabled={settings.workflowy?.enabled}
@@ -219,24 +227,17 @@ function App() {
             element={
               <FocusView
                 projects={activeProjects}
+                settings={settings}
                 taskStartTimes={taskStartTimes}
-                autoAdvance={settings.autoAdvance}
                 onComplete={completeTask}
                 onSnooze={snoozeTask}
                 onSkip={skipTask}
+                onTriggerNudge={handleTriggerNudge}
                 showToast={showToast}
               />
             }
           />
-          <Route
-            path="/projects"
-            element={
-              <AllProjectsView
-                projects={projects}
-                onNewProject={handleNewProject}
-              />
-            }
-          />
+          <Route path="/projects" element={<Navigate to="/" replace />} />
           <Route path="/project/:id" element={<ProjectDetailWrapper />} />
         </Routes>
       </div>

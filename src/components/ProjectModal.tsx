@@ -86,10 +86,10 @@ export function ProjectModal({
         <input
           type="number"
           min="5"
-          max="120"
+          max="480"
           value={nudgeMinutes}
           onChange={(e) =>
-            setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 25))
+            setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 180))
           }
         />
         <div className="field-hint">

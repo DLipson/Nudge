@@ -1,17 +1,18 @@
 # Nudge
 
-Nudge is a small Electron task app for keeping active projects moving. It tracks the next unfinished task in each active project, highlights work that has gone stale, and can send quiet desktop nudges when a task needs attention.
+Nudge keeps your active projects at the forefront of your mind so you don't have to keep setting reminders. It tracks the next unfinished task in each project, **automatically advances to the next task when you complete one**, and sends quiet desktop nudges when a task has been sitting too long. The result: a project stays moving because you always know what's next, without having to revisit a to-do list to figure it out.
+
+Nudge integrates with tools you already use — Workflowy today, with more sources planned — so your projects live where they already live and Nudge just handles the "keep this on my mind" layer.
 
 ## Features
 
-- Create local projects with ordered tasks.
-- Focus on the next unfinished task for each active project.
-- Complete, snooze, skip, edit, delete, and reorder tasks.
-- Configure per-project nudge intervals.
-- Enable desktop notifications with quiet hours and notification frequency limits.
-- Launch automatically on sign-in from the app settings.
+- **Auto-advance.** Complete a task and the next one takes its place immediately — no manual re-reminding.
+- **Focus view.** See every active project's next task in one place, sorted by urgency.
+- **Nudge notifications.** Get quiet desktop nudges when a task has been neglected past your threshold.
+- Per-project nudge intervals, snooze, skip, edit, delete, and reorder.
+- Desktop notifications with quiet hours and frequency limits.
 - Sync projects and tasks from Workflowy by tag.
-- View storage diagnostics from the settings modal.
+- Launch automatically on sign-in.
 
 ## Tech Stack
 

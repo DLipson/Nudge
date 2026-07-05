@@ -64,7 +64,6 @@ export interface NotificationOptions {
 
 export interface Settings {
   nudgeMinutes: number; // Default nudge interval for new projects
-  autoAdvance: boolean; // Show toast with next task on completion
   showCompleted: boolean; // Display done tasks in project view
 
   // Notification settings
@@ -75,6 +74,7 @@ export interface Settings {
   projectCooldown: number; // Minutes before re-nudging same project
   quietHoursStart: number; // Hour (0-23) when quiet hours begin
   quietHoursEnd: number; // Hour (0-23) when quiet hours end
+  nudgeBatchSize: number; // Number of queue items per notification
   nudgeTone: "gentle" | "firm"; // Affects notification language
   launchOnStartup: boolean;
 
@@ -115,14 +115,14 @@ export const DEFAULT_WORKFLOWY_CONFIG: WorkflowyConfig = {
 
 // Default settings
 export const DEFAULT_SETTINGS: Settings = {
-  nudgeMinutes: 25,
-  autoAdvance: true,
+  nudgeMinutes: 180,
   showCompleted: true,
   notificationsEnabled: true,
   maxNotificationFrequency: 10, // 10 minutes between any notifications
   notificationDurationSeconds: 8,
   notificationAutoDismiss: true,
-  projectCooldown: 30, // 30 minutes before re-nudging same project
+  projectCooldown: 180, // 3 hours before re-nudging same project
+  nudgeBatchSize: 1,
   quietHoursStart: 22, // 10 PM
   quietHoursEnd: 8, // 8 AM
   nudgeTone: "gentle",

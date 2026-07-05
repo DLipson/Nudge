@@ -1,10 +1,8 @@
 import { NavLink } from "react-router-dom";
-import type { Project, NudgeLevel } from "../types";
-import { taskAge } from "../lib/time";
+import type { Project } from "../types";
 
 interface SidebarProps {
   projects: Project[];
-  taskStartTimes: Record<string, number>;
   totalDone: number;
   totalTasks: number;
   workflowyEnabled?: boolean;
@@ -20,9 +18,8 @@ function nextTask(project: Project) {
   return project.tasks.find((t) => !t.done) ?? null;
 }
 
-function getNudgeLevel(ageMs: number, nudgeMinutes: number): NudgeLevel {
-  const r = ageMs / (nudgeMinutes * 60_000);
-  return r < 0.7 ? "ok" : r < 1.0 ? "warn" : "attention";
+function hasIncompleteTasks(project: Project) {
+  return project.tasks.some((t) => !t.done);
 }
 
 function formatSyncAge(ts: number): string {
@@ -32,18 +29,8 @@ function formatSyncAge(ts: number): string {
   return `${mins}m ago`;
 }
 
-function WorkflowyIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="12" r="3" />
-      <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
 export function Sidebar({
   projects,
-  taskStartTimes,
   totalDone,
   totalTasks,
   workflowyEnabled,
@@ -54,8 +41,8 @@ export function Sidebar({
   onOpenSettings,
   onSyncWorkflowy,
 }: SidebarProps) {
-  const localProjects = projects.filter((p) => p.sourceId !== "workflowy");
-  const workflowyProjects = projects.filter((p) => p.sourceId === "workflowy");
+  const localProjects = projects.filter((p) => p.sourceId !== "workflowy" && hasIncompleteTasks(p));
+  const workflowyProjects = projects.filter((p) => p.sourceId === "workflowy" && hasIncompleteTasks(p));
 
   return (
     <div className="nudge-sidebar">
@@ -74,124 +61,79 @@ export function Sidebar({
         >
           &#9678; Focus
         </NavLink>
-        <NavLink
-          to="/projects"
-          className={({ isActive }) => `sb-item ${isActive ? "active" : ""}`}
-        >
-          &#8862; All projects
-        </NavLink>
 
         <div className="sb-section">Projects</div>
-        {localProjects.map((p) => {
+
+        {/* Combined project list: local first, then Workflowy */}
+        {[...localProjects, ...workflowyProjects].map((p) => {
           const next = nextTask(p);
-          const level =
-            next && p.active
-              ? getNudgeLevel(taskAge(next, taskStartTimes), p.nudgeMinutes)
-              : null;
 
           return (
             <NavLink
               key={p.id}
               to={`/project/${p.id}`}
+              title={next?.name ? `Next: ${next.name}` : undefined}
               className={({ isActive }) => `sb-item ${isActive ? "active" : ""}`}
             >
               <span className="sb-dot" style={{ background: p.color }} />
               <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {p.name}
               </span>
-              {level && level !== "ok" && (
-                <span className={`sb-badge ${level === "warn" ? "warn" : ""}`}>
-                  {level === "warn" ? "!" : "!!"}
-                </span>
-              )}
             </NavLink>
           );
         })}
-        <div className="sb-add" onClick={onNewProject}>
-          + New project
-        </div>
 
-        {/* Workflowy section */}
+        {/* Sync button & status — only shown when Workflowy is enabled */}
         {workflowyEnabled && (
-          <>
-            <div className="sb-section" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <WorkflowyIcon />
-              <span>Workflowy</span>
-              {workflowySyncing ? (
-                <span style={{ marginLeft: "auto", fontSize: 9, color: "#888" }}>syncing…</span>
-              ) : (
-                onSyncWorkflowy && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 10px",
+              fontSize: 11,
+              color: "#555",
+            }}
+          >
+            {workflowySyncing ? (
+              <span>syncing…</span>
+            ) : workflowyError ? (
+              <>
+                <span style={{ color: "#f05050", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={workflowyError}>
+                  ⚠ {workflowyError.length > 48 ? workflowyError.slice(0, 48) + "…" : workflowyError}
+                </span>
+                {onSyncWorkflowy && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onSyncWorkflowy(); }}
-                    style={{
-                      marginLeft: "auto",
-                      background: "none",
-                      border: "none",
-                      color: workflowyError ? "#f05050" : "#555",
-                      cursor: "pointer",
-                      fontSize: 12,
-                      padding: "2px 4px",
-                    }}
+                    style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 12, padding: "2px 4px" }}
+                    title="Retry sync"
+                  >
+                    &#8635;
+                  </button>
+                )}
+              </>
+            ) : workflowyLastSync ? (
+              <>
+                <span>✓ synced {formatSyncAge(workflowyLastSync)}</span>
+                {onSyncWorkflowy && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSyncWorkflowy(); }}
+                    style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 12, padding: "2px 4px", marginLeft: "auto" }}
                     title="Sync now"
                   >
                     &#8635;
                   </button>
-                )
-              )}
-            </div>
-
-            {/* Sync status line */}
-            {!workflowySyncing && (workflowyError || workflowyLastSync) && (
-              <div style={{ padding: "3px 10px 6px", fontSize: 10 }}>
-                {workflowyError ? (
-                  <span style={{ color: "#f05050" }} title={workflowyError}>
-                    ⚠ {workflowyError.length > 48 ? workflowyError.slice(0, 48) + "…" : workflowyError}
-                  </span>
-                ) : workflowyLastSync ? (
-                  <span style={{ color: "#555" }}>✓ synced {formatSyncAge(workflowyLastSync)}</span>
-                ) : null}
-              </div>
+                )}
+              </>
+            ) : (
+              <span>No projects found. Tag bullets with your project tag.</span>
             )}
-
-            {workflowySyncing && (
-              <div style={{ padding: "3px 10px 6px", fontSize: 10, color: "#555" }}>
-                Fetching projects…
-              </div>
-            )}
-
-            {workflowyProjects.length === 0 && !workflowySyncing && !workflowyError && (
-              <div style={{ padding: "4px 10px 8px", fontSize: 11, color: "#555" }}>
-                No projects found. Tag bullets with your project tag.
-              </div>
-            )}
-
-            {workflowyProjects.map((p) => {
-              const next = nextTask(p);
-              const level =
-                next && p.active
-                  ? getNudgeLevel(taskAge(next, taskStartTimes), p.nudgeMinutes)
-                  : null;
-
-              return (
-                <NavLink
-                  key={p.id}
-                  to={`/project/${p.id}`}
-                  className={({ isActive }) => `sb-item ${isActive ? "active" : ""}`}
-                >
-                  <span className="sb-dot" style={{ background: p.color }} />
-                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {p.name}
-                  </span>
-                  {level && level !== "ok" && (
-                    <span className={`sb-badge ${level === "warn" ? "warn" : ""}`}>
-                      {level === "warn" ? "!" : "!!"}
-                    </span>
-                  )}
-                </NavLink>
-              );
-            })}
-          </>
+          </div>
         )}
+
+        <div className="sb-add" onClick={onNewProject}>
+          + New project
+        </div>
       </nav>
       <div className="sb-footer">
         <div className="sb-item" onClick={onOpenSettings}>

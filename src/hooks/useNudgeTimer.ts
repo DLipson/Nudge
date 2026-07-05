@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { Project, Task, Settings } from "../types";
-import { sendNudge, canNudge } from "../lib/notifications";
+import { sendBatchNudge, canNudgeGlobal, canNudgeProject } from "../lib/notifications";
 import { taskAge, isQuietHours } from "../lib/time";
 
 /**
@@ -41,31 +41,26 @@ export function useNudgeTimer({
 
     // Check active projects
     const activeProjects = projects.filter((p) => p.active);
+    const batchSize = settings.nudgeBatchSize;
 
+    if (!canNudgeGlobal(settings)) {
+      return;
+    }
+
+    const batch: Array<{ project: Project; task: Task }> = [];
     for (const project of activeProjects) {
+      if (batch.length >= batchSize) break;
+
       const task = getNextTask(project);
-      if (!task || isSnoozed(task)) {
-        continue;
-      }
+      if (!task || isSnoozed(task)) continue;
+      if (taskAge(task, taskStartTimes) < project.nudgeMinutes * 60_000) continue;
+      if (!canNudgeProject(project.id, settings)) continue;
 
-      // Check if task has exceeded nudge interval
-      const age = taskAge(task, taskStartTimes);
-      const nudgeThreshold = project.nudgeMinutes * 60_000;
+      batch.push({ project, task });
+    }
 
-      if (age >= nudgeThreshold) {
-        // Check if we can send a nudge (respects frequency limits)
-        const { canNudge: allowed } = canNudge(project.id, settings);
-
-        if (allowed) {
-          const sent = sendNudge(project, task, settings);
-
-          if (sent) {
-            // Only send one notification per check cycle
-            // to avoid overwhelming the user
-            return;
-          }
-        }
-      }
+    if (batch.length > 0) {
+      sendBatchNudge(batch, settings);
     }
   }, [
     enabled,

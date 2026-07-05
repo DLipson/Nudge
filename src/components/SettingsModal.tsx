@@ -19,7 +19,6 @@ export function SettingsModal({
   onClose,
 }: SettingsModalProps) {
   const [nudgeMinutes, setNudgeMinutes] = useState(settings.nudgeMinutes);
-  const [autoAdvance, setAutoAdvance] = useState(settings.autoAdvance);
   const [showCompleted, setShowCompleted] = useState(settings.showCompleted);
   const [launchOnStartup, setLaunchOnStartup] = useState(
     settings.launchOnStartup
@@ -39,6 +38,7 @@ export function SettingsModal({
     settings.quietHoursStart
   );
   const [quietHoursEnd, setQuietHoursEnd] = useState(settings.quietHoursEnd);
+  const [nudgeBatchSize, setNudgeBatchSize] = useState(settings.nudgeBatchSize);
   const [nudgeTone, setNudgeTone] = useState(settings.nudgeTone);
 
   // Workflowy settings
@@ -81,7 +81,6 @@ export function SettingsModal({
 
     onSave({
       nudgeMinutes,
-      autoAdvance,
       showCompleted,
       launchOnStartup,
       notificationsEnabled,
@@ -90,6 +89,7 @@ export function SettingsModal({
       notificationAutoDismiss,
       quietHoursStart,
       quietHoursEnd,
+      nudgeBatchSize,
       nudgeTone,
       workflowy,
     });
@@ -148,27 +148,19 @@ export function SettingsModal({
         <div>
           <div className="setting-label">Default nudge interval</div>
           <div className="setting-sub">
-            Minutes before a task is flagged as slow
+            Minutes before a task needs attention
           </div>
         </div>
-        <input
-          type="number"
-          min="5"
-          max="120"
-          value={nudgeMinutes}
-          onChange={(e) =>
-            setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 25))
-          }
-          style={inputStyle}
-        />
-      </div>
-
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Auto-advance on complete</div>
-          <div className="setting-sub">Show a toast with the next task name</div>
-        </div>
-        <Toggle on={autoAdvance} onChange={setAutoAdvance} />
+          <input
+            type="number"
+            min="5"
+            max="480"
+            value={nudgeMinutes}
+            onChange={(e) =>
+              setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 180))
+            }
+            style={inputStyle}
+          />
       </div>
 
       <div className="setting-row">
@@ -218,6 +210,23 @@ export function SettingsModal({
             setMaxNotificationFrequency(
               Math.max(1, parseInt(e.target.value) || 10)
             )
+          }
+          style={inputStyle}
+        />
+      </div>
+
+      <div className="setting-row">
+        <div>
+          <div className="setting-label">Nudge batch size</div>
+          <div className="setting-sub">Projects per notification (1 = one at a time)</div>
+        </div>
+        <input
+          type="number"
+          min="1"
+          max="20"
+          value={nudgeBatchSize}
+          onChange={(e) =>
+            setNudgeBatchSize(Math.max(1, parseInt(e.target.value) || 1))
           }
           style={inputStyle}
         />

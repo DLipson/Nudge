@@ -120,23 +120,6 @@ body {
   flex-shrink: 0;
 }
 
-.sb-badge {
-  margin-left: auto;
-  font-size: 10px;
-  font-family: monospace;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 99px;
-  /* Softer amber instead of red for attention states */
-  background: rgba(240, 180, 80, 0.12);
-  color: #f0b450;
-}
-
-.sb-badge.warn {
-  background: rgba(240, 160, 48, 0.12);
-  color: #f0a030;
-}
-
 .sb-add {
   display: flex;
   align-items: center;
@@ -229,16 +212,6 @@ body {
   background: rgba(240, 80, 80, 0.12);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════ */
-/* FOCUS CARDS */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-
 /* LIST VIEW */
 .focus-list {
   display: flex;
@@ -283,10 +256,23 @@ body {
   flex: 1;
 }
 
+.focus-list-tail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.focus-list-nudge {
+  font-size: 11px;
+  font-family: monospace;
+  color: #555;
+  flex-shrink: 0;
+}
+
 .focus-list-actions {
   display: flex;
   gap: 6px;
-  margin-left: auto;
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s;
@@ -294,43 +280,6 @@ body {
 
 .focus-list-row:hover .focus-list-actions {
   opacity: 1;
-}
-
-.focus-card {
-  background: #181818;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 18px;
-  transition: border-color 0.3s;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.card-project-name {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #555;
-}
-
-.timer-bar {
-  height: 3px;
-  background: #222;
-  border-radius: 2px;
-  margin-bottom: 14px;
-  overflow: hidden;
-}
-
-.timer-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.8s;
 }
 
 .mark-done-btn {
@@ -859,10 +808,6 @@ body {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* UTILITIES */
 /* ═══════════════════════════════════════════════════════════════════════════ */
-
-.clickable {
-  cursor: pointer;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* NOTIFICATION PERMISSION BANNER */
