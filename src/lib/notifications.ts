@@ -147,3 +147,44 @@ export function sendNudge(
 
   return true;
 }
+
+export function sendBatchNudge(
+  items: Array<{ project: Project; task: Task }>,
+  settings: Settings
+): boolean {
+  if (items.length === 0) return false;
+
+  const now = Date.now();
+  notificationState.lastNotificationTime = now;
+  for (const { project } of items) {
+    notificationState.projectLastNotified[project.id] = now;
+  }
+  persistNotificationState();
+
+  let title: string;
+  let body: string;
+
+  if (items.length === 1) {
+    const content = getNotificationContent(items[0].project, items[0].task, settings.nudgeTone);
+    title = content.title;
+    body = content.body;
+  } else {
+    title = `Nudge: ${items.length} projects need attention`;
+    body = items.map(({ project, task }) => `\u2022 ${project.name}: ${task.name}`).join("\n");
+  }
+
+  try {
+    if (window.electronAPI?.showNotification) {
+      window.electronAPI.showNotification(title, body, {
+        autoDismiss: settings.notificationAutoDismiss,
+        durationMs: settings.notificationDurationSeconds * 1_000,
+      });
+    } else {
+      console.log(`[Nudge] ${title}: ${body}`);
+    }
+  } catch (err) {
+    console.warn("Failed to send notification:", err);
+  }
+
+  return true;
+}
