@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Project } from "../types";
-import { taskAge } from "../lib/time";
+import type { Project, Settings } from "../types";
+import { calculateNudgeSchedule, taskAge } from "../lib/time";
+import { getNotificationState } from "../lib/notifications";
 
 interface FocusViewProps {
   projects: Project[];
+  settings: Settings;
   taskStartTimes: Record<string, number>;
   onComplete: (taskId: string) => void;
   onSnooze: (taskId: string, minutes: number) => void;
@@ -21,27 +23,29 @@ function isSnoozed(task: { snoozedUntil: number | null }) {
   return task.snoozedUntil !== null && task.snoozedUntil > Date.now();
 }
 
-function msUntilNudge(project: Project, taskStartTimes: Record<string, number>): number | null {
-  const task = nextTask(project);
-  if (!task || isSnoozed(task)) return null;
-  const age = taskAge(task, taskStartTimes);
-  const threshold = project.nudgeMinutes * 60_000;
-  return Math.max(0, threshold - age);
-}
-
 function formatNudgeTime(ms: number): string {
   if (ms === 0) return "nudge ready";
-  const totalMinutes = Math.ceil(ms / 60_000);
-  if (totalMinutes >= 60) {
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    return m > 0 ? `nudge in ${h}h ${m}m` : `nudge in ${h}h`;
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const hours = Math.floor(minutes / 60);
+
+  if (hours > 0) {
+    const m = minutes % 60;
+    return m > 0 ? `nudge in ${hours}h ${m}m` : `nudge in ${hours}h`;
   }
-  return `nudge in ${totalMinutes}m`;
+  if (minutes > 0 && seconds > 0) {
+    return `nudge in ${minutes}m ${seconds}s`;
+  }
+  if (minutes > 0) {
+    return `nudge in ${minutes}m`;
+  }
+  return `nudge in ${seconds}s`;
 }
 
 export function FocusView({
   projects,
+  settings,
   taskStartTimes,
   onComplete,
   onSnooze,
@@ -66,15 +70,42 @@ export function FocusView({
     [activeProjects, taskStartTimes]
   );
 
+  const notifState = useMemo(() => getNotificationState(), [activeProjects, taskStartTimes]);
+
+  const nudgeSchedule = useMemo(
+    () =>
+      calculateNudgeSchedule({
+        projects: activeProjects,
+        taskStartTimes,
+        settings,
+        isSnoozed,
+        getNextTask: nextTask,
+        lastNotificationTime: notifState.lastNotificationTime,
+        projectLastNotified: notifState.projectLastNotified,
+      }),
+    [activeProjects, taskStartTimes, settings, notifState]
+  );
+
+  const sortedProjects = useMemo(() => {
+    return [...activeProjects].sort((a, b) => {
+      const ma = nudgeSchedule.result.get(a.id) ?? null;
+      const mb = nudgeSchedule.result.get(b.id) ?? null;
+      if (ma === null && mb === null) return 0;
+      if (ma === null) return 1;
+      if (mb === null) return -1;
+      return ma - mb;
+    });
+  }, [activeProjects, nudgeSchedule]);
+
   const soonestNudge = useMemo(() => {
     let min: number | null = null;
     for (const p of activeProjects) {
-      const ms = msUntilNudge(p, taskStartTimes);
+      const ms = nudgeSchedule.result.get(p.id) ?? null;
       if (ms === null) continue;
       if (min === null || ms < min) min = ms;
     }
     return min;
-  }, [activeProjects, taskStartTimes]);
+  }, [activeProjects, nudgeSchedule]);
 
   return (
     <>
@@ -111,10 +142,10 @@ export function FocusView({
           </div>
         ) : (
           <div className="focus-list">
-            {activeProjects.map((p) => {
+            {sortedProjects.map((p) => {
               const n = nextTask(p);
               const snoozed = n ? isSnoozed(n) : false;
-              const nudgeMs = n && !snoozed ? msUntilNudge(p, taskStartTimes) : null;
+              const nudgeMs = n ? (nudgeSchedule.result.get(p.id) ?? null) : null;
 
               return (
                 <div

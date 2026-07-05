@@ -227,6 +227,7 @@ function App() {
             element={
               <FocusView
                 projects={activeProjects}
+                settings={settings}
                 taskStartTimes={taskStartTimes}
                 onComplete={completeTask}
                 onSnooze={snoozeTask}
