@@ -121,7 +121,7 @@ export const DEFAULT_SETTINGS: Settings = {
   maxNotificationFrequency: 10, // 10 minutes between any notifications
   notificationDurationSeconds: 8,
   notificationAutoDismiss: true,
-  projectCooldown: 30, // 30 minutes before re-nudging same project
+  projectCooldown: 180, // 3 hours before re-nudging same project
   nudgeBatchSize: 1,
   quietHoursStart: 22, // 10 PM
   quietHoursEnd: 8, // 8 AM
