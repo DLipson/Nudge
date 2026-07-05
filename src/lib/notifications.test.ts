@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { canNudge, sendNudge, resetNotificationState, subscribeNotificationState } from "./notifications";
 import { DEFAULT_SETTINGS } from "../types";
@@ -26,21 +25,38 @@ const task: Task = {
 
 const settings = {
   ...DEFAULT_SETTINGS,
-  maxNotificationFrequency: 10, // minutes
-  projectCooldown: 30,          // minutes
+  maxNotificationFrequency: 10,
+  projectCooldown: 30,
 };
 
-beforeEach(() => {
-  resetNotificationState();
-  Object.defineProperty(window, "electronAPI", {
+function installBrowserStubs() {
+  const storage = new Map<string, string>();
+
+  Object.defineProperty(globalThis, "localStorage", {
     value: {
-      isElectron: true as const,
-      showNotification: vi.fn(),
-      workflowyFetch: vi.fn(),
+      getItem: vi.fn((key: string) => storage.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => storage.set(key, value)),
+      removeItem: vi.fn((key: string) => storage.delete(key)),
+      clear: vi.fn(() => storage.clear()),
     },
-    writable: true,
     configurable: true,
   });
+
+  Object.defineProperty(globalThis, "window", {
+    value: {
+      electronAPI: {
+        isElectron: true as const,
+        showNotification: vi.fn(),
+        workflowyFetch: vi.fn(),
+      },
+    },
+    configurable: true,
+  });
+}
+
+beforeEach(() => {
+  installBrowserStubs();
+  resetNotificationState();
 });
 
 describe("canNudge", () => {
@@ -62,7 +78,6 @@ describe("canNudge", () => {
     vi.useFakeTimers();
     sendNudge(project, task, settings);
 
-    // Advance past projectCooldown (30 min) which is the longer limit
     vi.advanceTimersByTime(31 * 60_000);
 
     expect(canNudge("p1", settings).canNudge).toBe(true);
@@ -73,7 +88,6 @@ describe("canNudge", () => {
     vi.useFakeTimers();
     sendNudge(project, task, settings);
 
-    // Past global frequency (10 min) but not past project cooldown (30 min)
     vi.advanceTimersByTime(15 * 60_000);
 
     expect(canNudge("p1", settings).canNudge).toBe(false);
@@ -125,6 +139,7 @@ describe("sendNudge", () => {
     expect(window.electronAPI!.showNotification).toHaveBeenCalledOnce();
   });
 });
+
 describe("subscribeNotificationState", () => {
   it("notifies listeners when notification state changes", () => {
     const listener = vi.fn();
