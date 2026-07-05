@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Project, Settings } from "../types";
 import { calculateNudgeSchedule, taskAge } from "../lib/time";
-import { getNotificationState } from "../lib/notifications";
+import { getNotificationState, subscribeNotificationState } from "../lib/notifications";
 
 interface FocusViewProps {
   projects: Project[];
@@ -70,7 +70,11 @@ export function FocusView({
     [activeProjects, taskStartTimes]
   );
 
-  const notifState = useMemo(() => getNotificationState(), [activeProjects, taskStartTimes]);
+  const [notifState, setNotifState] = useState(() => getNotificationState());
+
+  useEffect(() => {
+    return subscribeNotificationState(() => setNotifState(getNotificationState()));
+  }, []);
 
   const nudgeSchedule = useMemo(
     () =>

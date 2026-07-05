@@ -21,12 +21,20 @@ function loadNotificationState(): NotificationState {
 function persistNotificationState(): void {
   try {
     localStorage.setItem(PERSIST_KEY, JSON.stringify(notificationState));
+    notifyNotificationStateChanged();
   } catch {
     /* ignore */
   }
 }
 
 let notificationState: NotificationState = loadNotificationState();
+const notificationStateListeners = new Set<() => void>();
+
+function notifyNotificationStateChanged(): void {
+  for (const listener of notificationStateListeners) {
+    listener();
+  }
+}
 
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
   return "granted";
@@ -97,6 +105,11 @@ function getNotificationContent(
   return { title: `Action needed: ${project.name}`, body: `Task waiting: ${task.name}` };
 }
 
+export function subscribeNotificationState(listener: () => void): () => void {
+  notificationStateListeners.add(listener);
+  return () => notificationStateListeners.delete(listener);
+}
+
 export function getNotificationState(): {
   lastNotificationTime: number;
   projectLastNotified: Record<string, number>;
@@ -110,6 +123,7 @@ export function getNotificationState(): {
 export function resetNotificationState(): void {
   notificationState = { lastNotificationTime: 0, projectLastNotified: {} };
   localStorage.removeItem(PERSIST_KEY);
+  notifyNotificationStateChanged();
 }
 
 export function sendNudge(
