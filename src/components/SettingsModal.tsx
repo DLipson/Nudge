@@ -38,6 +38,7 @@ export function SettingsModal({
     settings.quietHoursStart
   );
   const [quietHoursEnd, setQuietHoursEnd] = useState(settings.quietHoursEnd);
+  const [nudgeBatchSize, setNudgeBatchSize] = useState(settings.nudgeBatchSize);
   const [nudgeTone, setNudgeTone] = useState(settings.nudgeTone);
 
   // Workflowy settings
@@ -88,6 +89,7 @@ export function SettingsModal({
       notificationAutoDismiss,
       quietHoursStart,
       quietHoursEnd,
+      nudgeBatchSize,
       nudgeTone,
       workflowy,
     });
@@ -208,6 +210,23 @@ export function SettingsModal({
             setMaxNotificationFrequency(
               Math.max(1, parseInt(e.target.value) || 10)
             )
+          }
+          style={inputStyle}
+        />
+      </div>
+
+      <div className="setting-row">
+        <div>
+          <div className="setting-label">Nudge batch size</div>
+          <div className="setting-sub">Projects per notification (1 = one at a time)</div>
+        </div>
+        <input
+          type="number"
+          min="1"
+          max="20"
+          value={nudgeBatchSize}
+          onChange={(e) =>
+            setNudgeBatchSize(Math.max(1, parseInt(e.target.value) || 1))
           }
           style={inputStyle}
         />

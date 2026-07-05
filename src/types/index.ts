@@ -74,6 +74,7 @@ export interface Settings {
   projectCooldown: number; // Minutes before re-nudging same project
   quietHoursStart: number; // Hour (0-23) when quiet hours begin
   quietHoursEnd: number; // Hour (0-23) when quiet hours end
+  nudgeBatchSize: number; // Number of queue items per notification
   nudgeTone: "gentle" | "firm"; // Affects notification language
   launchOnStartup: boolean;
 
@@ -121,6 +122,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notificationDurationSeconds: 8,
   notificationAutoDismiss: true,
   projectCooldown: 30, // 30 minutes before re-nudging same project
+  nudgeBatchSize: 1,
   quietHoursStart: 22, // 10 PM
   quietHoursEnd: 8, // 8 AM
   nudgeTone: "gentle",
