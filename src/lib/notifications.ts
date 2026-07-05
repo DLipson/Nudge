@@ -1,4 +1,5 @@
 import type { Project, Task, Settings } from "../types";
+import { taskAge } from "./time";
 
 const PERSIST_KEY = "nudge-notification-state";
 
@@ -187,4 +188,29 @@ export function sendBatchNudge(
   }
 
   return true;
+}
+
+export function triggerNextNudge(
+  projects: Project[],
+  settings: Settings,
+  taskStartTimes: Record<string, number>,
+  getNextTask: (project: Project) => Task | null,
+  isSnoozed: (task: Task) => boolean,
+): boolean {
+  const activeProjects = projects.filter((p) => p.active);
+  const batchSize = settings.nudgeBatchSize;
+
+  const batch: Array<{ project: Project; task: Task }> = [];
+  for (const project of activeProjects) {
+    if (batch.length >= batchSize) break;
+
+    const task = getNextTask(project);
+    if (!task || isSnoozed(task)) continue;
+    if (taskAge(task, taskStartTimes) < project.nudgeMinutes * 60_000) continue;
+
+    batch.push({ project, task });
+  }
+
+  if (batch.length === 0) return false;
+  return sendBatchNudge(batch, settings);
 }

@@ -9,6 +9,7 @@ interface FocusViewProps {
   onComplete: (taskId: string) => void;
   onSnooze: (taskId: string, minutes: number) => void;
   onSkip: (projectId: string, taskId: string) => void;
+  onTriggerNudge: () => void;
   showToast: (message: string) => void;
 }
 
@@ -45,6 +46,7 @@ export function FocusView({
   onComplete,
   onSnooze,
   onSkip,
+  onTriggerNudge,
   showToast,
 }: FocusViewProps) {
   const navigate = useNavigate();
@@ -84,6 +86,21 @@ export function FocusView({
             ? ` \u00B7 ${needsAttention} need attention`
             : " \u00B7 all on track"}
           {soonestNudge !== null && ` \u00B7 ${formatNudgeTime(soonestNudge)}`}
+          <span
+            onClick={onTriggerNudge}
+            style={{
+              marginLeft: 8,
+              fontSize: 10,
+              color: "#555",
+              cursor: "pointer",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 4,
+              padding: "1px 6px",
+            }}
+            title="Trigger next nudge (testing)"
+          >
+            trigger
+          </span>
         </div>
       </div>
       <div className="nudge-content">

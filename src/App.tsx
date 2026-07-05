@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-do
 import { useAppState } from "./hooks/useAppState";
 import { useNotifications } from "./hooks/useNotifications";
 import { useNudgeTimer } from "./hooks/useNudgeTimer";
+import { triggerNextNudge } from "./lib/notifications";
 import {
   Sidebar,
   FocusView,
@@ -73,6 +74,15 @@ function App() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(""), 2400);
   }, []);
+
+  const handleTriggerNudge = useCallback(() => {
+    const sent = triggerNextNudge(projects, settings, taskStartTimes, getNextTask, isSnoozed);
+    if (sent) {
+      showToast("Nudge triggered");
+    } else {
+      showToast("No nudgeable projects");
+    }
+  }, [projects, settings, taskStartTimes, getNextTask, isSnoozed, showToast]);
 
   // Computed totals for sidebar
   const totalDone = activeProjects.reduce(
@@ -221,6 +231,7 @@ function App() {
                 onComplete={completeTask}
                 onSnooze={snoozeTask}
                 onSkip={skipTask}
+                onTriggerNudge={handleTriggerNudge}
                 showToast={showToast}
               />
             }
