@@ -11,6 +11,10 @@ import {
 import path from "path";
 import appConfig from "../app-config.json";
 import {
+  getNotificationOptions,
+  type NotificationOptions,
+} from "./notificationOptions";
+import {
   getStartupLaunchOptions,
   getStartupLoginItemOptions,
   getUnpackagedStartupAppPath,
@@ -139,7 +143,7 @@ function createTray(): void {
   });
 }
 
-// ── IPC Handlers ─────────────────────────────────────────────────────────────
+// IPC Handlers
 
 interface FetchOptions {
   method?: string;
@@ -147,33 +151,7 @@ interface FetchOptions {
   body?: string;
 }
 
-interface NotificationOptions {
-  autoDismiss?: boolean;
-  durationMs?: number;
-}
-
-const DEFAULT_NOTIFICATION_DURATION_MS = 8_000;
-const MIN_NOTIFICATION_DURATION_MS = 1_000;
-const MAX_NOTIFICATION_DURATION_MS = 300_000;
-
-function getNotificationOptions(
-  options?: NotificationOptions
-): Required<NotificationOptions> {
-  const durationMs =
-    typeof options?.durationMs === "number" && Number.isFinite(options.durationMs)
-      ? Math.min(
-          MAX_NOTIFICATION_DURATION_MS,
-          Math.max(MIN_NOTIFICATION_DURATION_MS, options.durationMs)
-        )
-      : DEFAULT_NOTIFICATION_DURATION_MS;
-
-  return {
-    autoDismiss: options?.autoDismiss !== false,
-    durationMs,
-  };
-}
-
-// Workflowy API requests — no CORS restrictions in the main process
+// Workflowy API requests - no CORS restrictions in the main process
 ipcMain.handle(
   "workflowy:fetch",
   async (
@@ -207,7 +185,7 @@ ipcMain.handle(
     const notification = new Notification({
       title,
       body,
-      timeoutType: notificationOptions.autoDismiss ? "default" : "never",
+      timeoutType: notificationOptions.timeoutType,
     });
 
     notification.on("click", () => {
@@ -239,7 +217,7 @@ ipcMain.handle("app:setLaunchOnStartup", (_event, enabled: boolean) => {
   return setLaunchOnStartup(enabled);
 });
 
-// ── App lifecycle ─────────────────────────────────────────────────────────────
+// App lifecycle
 
 app.whenReady().then(() => {
   syncLaunchOnStartupRegistration();
@@ -255,7 +233,7 @@ app.whenReady().then(() => {
   });
 });
 
-// Keep running in tray — don't quit when all windows are closed
+// Keep running in tray - don't quit when all windows are closed
 app.on("window-all-closed", () => {
   // intentionally empty: app lives in system tray
 });
