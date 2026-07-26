@@ -113,8 +113,9 @@ export function TaskList({
     const sourceTaskId = e.dataTransfer.getData("text/plain");
 
     if (sourceTaskId && sourceTaskId !== targetTaskId) {
-      // Find the new index (where the target task is)
-      const targetIndex = visible.findIndex((t) => t.id === targetTaskId);
+      // Reorder operates on the full task array, so map the drop target back to
+      // its index there — not its index in the (completed-filtered) visible list.
+      const targetIndex = project.tasks.findIndex((t) => t.id === targetTaskId);
       if (targetIndex >= 0) {
         onReorder(sourceTaskId, targetIndex);
       }
