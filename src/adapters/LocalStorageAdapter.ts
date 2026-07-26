@@ -322,13 +322,18 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
   }
 
   // Get full state (for useAppState hook)
+  //
+  // Returns a fresh top-level object every call. The adapter mutates its
+  // internal state in place, so returning the live reference would make
+  // setLocalState(getFullState()) a no-op (React bails on an Object.is-equal
+  // value) and the UI would only refresh on the next timer tick.
   getFullState(): AppState {
     if (!this.state) throw new Error("Adapter not connected");
-    return this.state;
+    return { ...this.state };
   }
 
   getDiagnostics(): StorageDiagnostics {
-    return this.diagnostics;
+    return { ...this.diagnostics };
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

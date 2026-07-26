@@ -227,4 +227,35 @@ describe("LocalStorageAdapter", () => {
       expect(adapter2.getDiagnostics().stateSource).toBe("persisted");
     });
   });
+
+  // Regression: the app reacts to state changes by reference identity
+  // (setLocalState(getFullState())). If getFullState/getDiagnostics return the
+  // same mutated object each call, React bails on the update and the UI only
+  // refreshes on the next 30s tick.
+  describe("reference identity for React reactivity", () => {
+    it("getFullState returns a fresh top-level reference each call", async () => {
+      const adapter = await makeAdapter();
+      const a = adapter.getFullState();
+      const b = adapter.getFullState();
+      expect(a).not.toBe(b);
+    });
+
+    it("getFullState reference changes after a mutation", async () => {
+      const adapter = await makeAdapter();
+      const project = await adapter.addProject!("P", "#aaa", 25);
+      const before = adapter.getFullState();
+      const task = await adapter.addTask!(project.id, "T", "");
+      const afterAdd = adapter.getFullState();
+      expect(afterAdd).not.toBe(before);
+
+      await adapter.completeTask!(task.id);
+      const afterComplete = adapter.getFullState();
+      expect(afterComplete).not.toBe(afterAdd);
+    });
+
+    it("getDiagnostics returns a fresh reference each call", async () => {
+      const adapter = await makeAdapter();
+      expect(adapter.getDiagnostics()).not.toBe(adapter.getDiagnostics());
+    });
+  });
 });
