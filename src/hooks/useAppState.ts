@@ -9,6 +9,11 @@ import type {
 } from "../types";
 import { LocalStorageAdapter } from "../adapters/LocalStorageAdapter";
 import { WorkflowyAdapter } from "../adapters/WorkflowyAdapter";
+import {
+  applySnoozeOverlay,
+  loadSnoozeOverlay,
+  saveSnoozeOverlay,
+} from "../lib/snoozeOverlay";
 
 /**
  * Main application state hook
@@ -85,6 +90,10 @@ export interface UseAppStateReturn {
 export function useAppState(): UseAppStateReturn {
   const [localState, setLocalState] = useState<AppState | null>(null);
   const [workflowyProjects, setWorkflowyProjects] = useState<Project[]>([]);
+  // Per-task snooze times for Workflowy tasks (local-only; survives WF resync).
+  const [wfSnoozes, setWfSnoozes] = useState<Record<string, number>>(() =>
+    loadSnoozeOverlay()
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [workflowySyncing, setWorkflowySyncing] = useState(false);
   const [workflowyError, setWorkflowyError] = useState<string | null>(null);
@@ -253,10 +262,11 @@ export function useAppState(): UseAppStateReturn {
       // Check local projects first
       const local = localState?.projects.find((p) => p.id === projectId);
       if (local) return local;
-      // Then check Workflowy projects
-      return workflowyProjects.find((p) => p.id === projectId);
+      // Then check Workflowy projects (with snooze overlay applied)
+      const wf = workflowyProjects.find((p) => p.id === projectId);
+      return wf ? applySnoozeOverlay([wf], wfSnoozes)[0] : undefined;
     },
-    [localState?.projects, workflowyProjects]
+    [localState?.projects, workflowyProjects, wfSnoozes]
   );
 
   // ── Task operations ───────────────────────────────────────────────────────
@@ -343,20 +353,43 @@ export function useAppState(): UseAppStateReturn {
 
   const snoozeTask = useCallback(
     (taskId: string, minutes: number) => {
+      const isWorkflowyTask = workflowyProjects.some((p) =>
+        p.tasks.some((t) => t.id === taskId)
+      );
+      if (isWorkflowyTask) {
+        setWfSnoozes((prev) => {
+          const next = { ...prev, [`workflowy:${taskId}`]: Date.now() + minutes * 60_000 };
+          saveSnoozeOverlay(next);
+          return next;
+        });
+        return;
+      }
       const adp = getLocalAdapter();
       adp.snoozeTask(taskId, minutes);
       refresh();
     },
-    [refresh]
+    [refresh, workflowyProjects]
   );
 
   const unsnoozeTask = useCallback(
     (taskId: string) => {
+      const isWorkflowyTask = workflowyProjects.some((p) =>
+        p.tasks.some((t) => t.id === taskId)
+      );
+      if (isWorkflowyTask) {
+        setWfSnoozes((prev) => {
+          const next = { ...prev };
+          delete next[`workflowy:${taskId}`];
+          saveSnoozeOverlay(next);
+          return next;
+        });
+        return;
+      }
       const adp = getLocalAdapter();
       adp.unsnoozeTask(taskId);
       refresh();
     },
-    [refresh]
+    [refresh, workflowyProjects]
   );
 
   const skipTask = useCallback(
@@ -431,9 +464,12 @@ export function useAppState(): UseAppStateReturn {
     const local = localState?.projects ?? [];
     // Add Workflowy projects, but don't duplicate if same ID exists
     const localIds = new Set(local.map((p) => p.id));
-    const wfOnly = workflowyProjects.filter((p) => !localIds.has(p.id));
+    const wfOnly = applySnoozeOverlay(
+      workflowyProjects.filter((p) => !localIds.has(p.id)),
+      wfSnoozes
+    );
     return [...local, ...wfOnly];
-  }, [localState?.projects, workflowyProjects]);
+  }, [localState?.projects, workflowyProjects, wfSnoozes]);
 
   useEffect(() => {
     if (isLoading || !localAdapter?.isConnected()) {
