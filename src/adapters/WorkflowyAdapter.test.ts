@@ -219,6 +219,28 @@ describe("WorkflowyAdapter", () => {
     expect(noneCallsAfterSync - noneCallsBeforeSync).toBe(2);
   });
 
+  it("gives every concurrent caller the fully-populated project set", async () => {
+    // Two fetchProjects() before the adapter is connected both trigger
+    // connect()->fetchAllNodes(). The second must not observe the cleared,
+    // mid-populate projectNodes and return an empty/partial set.
+    installWorkflowyFetchMock({
+      None: [{ id: "project-1", name: "#nudge Alpha" }],
+      "project-1": [{ id: "task-1", name: "Ship it" }],
+    });
+
+    const adapter = new WorkflowyAdapter(makeConfig());
+
+    const [a, b] = await Promise.all([
+      adapter.fetchProjects(),
+      adapter.fetchProjects(),
+    ]);
+
+    expect(a).toHaveLength(1);
+    expect(b).toHaveLength(1);
+    expect(a[0].tasks).toHaveLength(1);
+    expect(b[0].tasks).toHaveLength(1);
+  });
+
   it("resets the in-flight guard after a failed fetch", async () => {
     installWorkflowyFetchMock(
       {

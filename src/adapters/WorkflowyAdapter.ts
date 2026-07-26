@@ -38,7 +38,7 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
 
   private config: WorkflowyConfig;
   private connected = false;
-  private fetchingNodes = false;
+  private fetchPromise: Promise<void> | null = null;
   private lastSync: number | null = null;
   private nodesCache: Map<string, WorkflowyNode> = new Map();
   private projectNodes: WorkflowyNode[] = [];
@@ -249,15 +249,29 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
     );
   }
 
-  private async fetchAllNodes(): Promise<void> {
-    if (this.fetchingNodes) return;
-    this.fetchingNodes = true;
+  // Coalesce concurrent syncs onto one in-flight fetch. Returning early with a
+  // bare `return` would let a second caller read the cleared, mid-populate
+  // caches; instead every caller awaits the same promise and sees the fully
+  // populated result.
+  private fetchAllNodes(): Promise<void> {
+    if (this.fetchPromise) return this.fetchPromise;
+    this.fetchPromise = (async () => {
+      try {
+        await this.doFetchAllNodes();
+      } finally {
+        this.fetchPromise = null;
+      }
+    })();
+    return this.fetchPromise;
+  }
+
+  private async doFetchAllNodes(): Promise<void> {
     this.nodesCache.clear();
     this.projectNodes = [];
     this.childrenMap.clear();
     this.rawChildrenMap.clear();
 
-    try {
+    {
       if (this.config.searchPaths?.trim()) {
         // ── Configured path search ──────────────────────────────────────────
         const paths = this.config.searchPaths
@@ -304,8 +318,6 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
         projectCount: this.projectNodes.length,
         projects: this.buildProjectOrderDiagnostic(),
       });
-    } finally {
-      this.fetchingNodes = false;
     }
   }
 
