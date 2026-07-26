@@ -76,6 +76,13 @@ export function FocusView({
     return subscribeNotificationState(() => setNotifState(getNotificationState()));
   }, []);
 
+  // Live clock so the "nudge in Xm Ys" countdown ticks down in real time.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const nudgeSchedule = useMemo(
     () =>
       calculateNudgeSchedule({
@@ -86,8 +93,9 @@ export function FocusView({
         getNextTask: nextTask,
         lastNotificationTime: notifState.lastNotificationTime,
         projectLastNotified: notifState.projectLastNotified,
+        now,
       }),
-    [activeProjects, taskStartTimes, settings, notifState]
+    [activeProjects, taskStartTimes, settings, notifState, now]
   );
 
   const sortedProjects = useMemo(() => {
