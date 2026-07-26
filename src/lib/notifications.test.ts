@@ -140,6 +140,36 @@ describe("sendNudge", () => {
   });
 });
 
+describe("loadNotificationState resilience", () => {
+  it("does not crash nudging when persisted state is missing projectLastNotified", async () => {
+    installBrowserStubs();
+    localStorage.setItem(
+      "nudge-notification-state",
+      JSON.stringify({ lastNotificationTime: 123 })
+    );
+
+    vi.resetModules();
+    const mod = await import("./notifications");
+
+    expect(() => mod.canNudgeProject("p1", settings)).not.toThrow();
+    expect(mod.canNudgeProject("p1", settings)).toBe(true);
+    expect(() => mod.sendBatchNudge([{ project, task }], settings)).not.toThrow();
+  });
+
+  it("falls back to defaults when persisted state is not an object", async () => {
+    installBrowserStubs();
+    localStorage.setItem("nudge-notification-state", JSON.stringify("garbage"));
+
+    vi.resetModules();
+    const mod = await import("./notifications");
+
+    expect(mod.getNotificationState()).toEqual({
+      lastNotificationTime: 0,
+      projectLastNotified: {},
+    });
+  });
+});
+
 describe("subscribeNotificationState", () => {
   it("notifies listeners when notification state changes", () => {
     const listener = vi.fn();

@@ -11,7 +11,15 @@ interface NotificationState {
 function loadNotificationState(): NotificationState {
   try {
     const raw = localStorage.getItem(PERSIST_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        return {
+          lastNotificationTime: parsed.lastNotificationTime ?? 0,
+          projectLastNotified: parsed.projectLastNotified ?? {},
+        };
+      }
+    }
   } catch {
     /* ignore */
   }
