@@ -104,4 +104,52 @@ describe("syncActiveTaskStartTimes", () => {
       "workflowy:shared-id": 1000,
     });
   });
+
+  it("preserves an active task's start time when its project is paused", () => {
+    const task = makeTask({ id: "t1", sourceId: "local-storage" });
+    const active = makeProject({
+      id: "p1",
+      sourceId: "local-storage",
+      active: true,
+      tasks: [task],
+    });
+
+    const first = syncActiveTaskStartTimes([active], {}, 1000);
+    expect(first.taskStartTimes).toEqual({ "local-storage:t1": 1000 });
+
+    // Pause the project — the accumulated age must not be discarded.
+    const paused = { ...active, active: false };
+    const second = syncActiveTaskStartTimes(
+      [paused],
+      first.taskStartTimes,
+      5000
+    );
+
+    expect(second.changed).toBe(false);
+    expect(second.taskStartTimes).toEqual({ "local-storage:t1": 1000 });
+  });
+
+  it("does not reset the clock to now when a paused project is resumed", () => {
+    const task = makeTask({ id: "t1", sourceId: "local-storage" });
+    const project = makeProject({
+      id: "p1",
+      sourceId: "local-storage",
+      tasks: [task],
+    });
+
+    const started = syncActiveTaskStartTimes([project], {}, 1000);
+    const paused = syncActiveTaskStartTimes(
+      [{ ...project, active: false }],
+      started.taskStartTimes,
+      5000
+    );
+    const resumed = syncActiveTaskStartTimes(
+      [{ ...project, active: true }],
+      paused.taskStartTimes,
+      9000
+    );
+
+    // Original start time survives the pause/resume round-trip.
+    expect(resumed.taskStartTimes).toEqual({ "local-storage:t1": 1000 });
+  });
 });

@@ -13,9 +13,11 @@ export function syncActiveTaskStartTimes(
   let changed = false;
 
   for (const project of projects) {
-    const activeTask = project.active
-      ? project.tasks.find((task) => !task.done) ?? null
-      : null;
+    // Skip paused projects entirely: leave their start times frozen so the
+    // active task's accumulated age survives a pause/resume round-trip.
+    if (!project.active) continue;
+
+    const activeTask = project.tasks.find((task) => !task.done) ?? null;
 
     for (const task of project.tasks) {
       const key = taskTimingKey(task);
