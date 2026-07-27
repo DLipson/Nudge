@@ -121,21 +121,23 @@ export function FocusView({
             ? ` · ${needsAttention} need attention`
             : " · all on track"}
           {soonestNudge !== null && ` · ${formatNudgeTime(soonestNudge)}`}
-          <span
-            onClick={onTriggerNudge}
-            style={{
-              marginLeft: 8,
-              fontSize: 10,
-              color: "#555",
-              cursor: "pointer",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 4,
-              padding: "1px 6px",
-            }}
-            title="Trigger next nudge (testing)"
-          >
-            trigger
-          </span>
+          {import.meta.env.DEV && (
+            <span
+              onClick={onTriggerNudge}
+              style={{
+                marginLeft: 8,
+                fontSize: 10,
+                color: "#555",
+                cursor: "pointer",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 4,
+                padding: "1px 6px",
+              }}
+              title="Trigger next nudge (testing)"
+            >
+              trigger
+            </span>
+          )}
         </div>
       </div>
       <div className="nudge-content">
