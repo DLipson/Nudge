@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal } from "./Modal";
 import { COLORS } from "../types";
+import { NUDGE_WARN_RATIO } from "../lib/nudge";
 
 interface ProjectModalProps {
   initialData?: {
@@ -89,12 +90,12 @@ export function ProjectModal({
           max="480"
           value={nudgeMinutes}
           onChange={(e) =>
-            setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 180))
+            setNudgeMinutes(Math.min(480, Math.max(1, parseInt(e.target.value) || 180)))
           }
         />
         <div className="field-hint">
-          Reminder at {nudgeMinutes}m, needs attention at ~
-          {Math.round(nudgeMinutes * 1.4)}m
+          Flagged at ~{Math.round(nudgeMinutes * NUDGE_WARN_RATIO)}m, nudges at{" "}
+          {nudgeMinutes}m
         </div>
       </div>
     </Modal>

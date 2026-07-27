@@ -157,7 +157,7 @@ export function SettingsModal({
             max="480"
             value={nudgeMinutes}
             onChange={(e) =>
-              setNudgeMinutes(Math.max(1, parseInt(e.target.value) || 180))
+              setNudgeMinutes(Math.min(480, Math.max(1, parseInt(e.target.value) || 180)))
             }
             style={inputStyle}
           />
@@ -208,7 +208,7 @@ export function SettingsModal({
           value={maxNotificationFrequency}
           onChange={(e) =>
             setMaxNotificationFrequency(
-              Math.max(1, parseInt(e.target.value) || 10)
+              Math.min(60, Math.max(1, parseInt(e.target.value) || 10))
             )
           }
           style={inputStyle}
