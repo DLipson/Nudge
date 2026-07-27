@@ -82,9 +82,10 @@ export function TaskList({
     setDraggedId(taskId);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", taskId);
-    // Add a slight delay to allow the drag image to be captured
+    // Capture the element synchronously: React nulls out e.currentTarget after
+    // the handler returns, so reading it inside the rAF callback throws.
+    const el = e.currentTarget as HTMLElement;
     requestAnimationFrame(() => {
-      const el = e.currentTarget as HTMLElement;
       el.style.opacity = "0.5";
     });
   };
