@@ -44,18 +44,6 @@ function notifyNotificationStateChanged(): void {
   }
 }
 
-export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  return "granted";
-}
-
-export function canSendNotifications(): boolean {
-  return true;
-}
-
-export function getNotificationPermission(): NotificationPermission {
-  return "granted";
-}
-
 export function canNudgeGlobal(settings: Settings): boolean {
   return (
     Date.now() - notificationState.lastNotificationTime >=

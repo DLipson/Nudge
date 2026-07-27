@@ -186,7 +186,7 @@ export function SettingsModal({
 
       <div className="setting-row">
         <div>
-          <div className="setting-label">Enable browser notifications</div>
+          <div className="setting-label">Enable desktop notifications</div>
           <div className="setting-sub">Get nudged when tasks need attention</div>
         </div>
         <Toggle on={notificationsEnabled} onChange={setNotificationsEnabled} />

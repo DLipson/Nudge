@@ -1,0 +1,493 @@
+{
+  "stack": "TypeScript",
+  "framework": "React",
+  "language": "TypeScript",
+  "entry_points": [
+    "src/main.tsx",
+    "electron/main.ts",
+    "index.html"
+  ],
+  "summary": "Nudge is a desktop productivity app that sits in your system tray and sends gentle reminders ('nudges') when tasks have been sitting too long. You create projects with tasks, set a nudge interval for each project, and the app notifies you when it's time to check back in. It can optionally sync tasks from Workflowy.",
+  "components": [
+    {
+      "name": "App",
+      "type": "component",
+      "description": "Root component that wires routing, modals, nudge timer, and state",
+      "files": [
+        "src/App.tsx"
+      ],
+      "depends_on": [
+        "useAppState",
+        "useNudgeTimer",
+        "FocusView",
+        "Sidebar",
+        "ProjectView",
+        "ProjectModal",
+        "TaskModal",
+        "SettingsModal",
+        "Toast"
+      ]
+    },
+    {
+      "name": "FocusView",
+      "type": "page",
+      "description": "Dashboard listing active projects sorted by next nudge time",
+      "files": [
+        "src/components/FocusView.tsx",
+        "src/components/FocusView.test.tsx"
+      ],
+      "depends_on": [
+        "time",
+        "notifications"
+      ]
+    },
+    {
+      "name": "ProjectView",
+      "type": "page",
+      "description": "Detail view of a single project with its task list",
+      "files": [
+        "src/components/ProjectView.tsx"
+      ],
+      "depends_on": [
+        "TaskList"
+      ]
+    },
+    {
+      "name": "Sidebar",
+      "type": "component",
+      "description": "Navigation sidebar showing project list and sync status",
+      "files": [
+        "src/components/Sidebar.tsx"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "TaskList",
+      "type": "component",
+      "description": "Draggable task list with complete, snooze, edit, delete actions",
+      "files": [
+        "src/components/TaskList.tsx",
+        "src/components/TaskList.test.tsx"
+      ],
+      "depends_on": [
+        "time"
+      ]
+    },
+    {
+      "name": "ProjectModal",
+      "type": "component",
+      "description": "Modal dialog for creating or editing a project",
+      "files": [
+        "src/components/ProjectModal.tsx"
+      ],
+      "depends_on": [
+        "Modal"
+      ]
+    },
+    {
+      "name": "TaskModal",
+      "type": "component",
+      "description": "Modal dialog for adding or editing task details",
+      "files": [
+        "src/components/TaskModal.tsx"
+      ],
+      "depends_on": [
+        "Modal"
+      ]
+    },
+    {
+      "name": "SettingsModal",
+      "type": "component",
+      "description": "Full settings panel for notifications, Workflowy, and storage",
+      "files": [
+        "src/components/SettingsModal.tsx"
+      ],
+      "depends_on": [
+        "Modal",
+        "Toggle",
+        "WorkflowyAdapter"
+      ]
+    },
+    {
+      "name": "Modal",
+      "type": "component",
+      "description": "Reusable modal shell with backdrop, header, body, footer",
+      "files": [
+        "src/components/Modal.tsx"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Toast",
+      "type": "component",
+      "description": "Temporary notification bar for user action feedback",
+      "files": [
+        "src/components/Toast.tsx"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Toggle",
+      "type": "component",
+      "description": "Reusable on/off toggle switch",
+      "files": [
+        "src/components/Toggle.tsx"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "useAppState",
+      "type": "service",
+      "description": "Central state hook bridging adapters to React components",
+      "files": [
+        "src/hooks/useAppState.ts"
+      ],
+      "depends_on": [
+        "LocalStorageAdapter",
+        "WorkflowyAdapter",
+        "snoozeOverlay"
+      ]
+    },
+    {
+      "name": "useNudgeTimer",
+      "type": "service",
+      "description": "Background timer that checks projects and triggers nudges",
+      "files": [
+        "src/hooks/useNudgeTimer.ts"
+      ],
+      "depends_on": [
+        "notifications",
+        "time"
+      ]
+    },
+    {
+      "name": "useNotifications",
+      "type": "service",
+      "description": "Manages browser notification permission state",
+      "files": [
+        "src/hooks/useNotifications.ts"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "LocalStorageAdapter",
+      "type": "database",
+      "description": "Persists projects, tasks, and settings in browser localStorage",
+      "files": [
+        "src/adapters/LocalStorageAdapter.ts",
+        "src/adapters/LocalStorageAdapter.test.ts"
+      ],
+      "depends_on": [
+        "taskTiming",
+        "uid",
+        "storage config"
+      ]
+    },
+    {
+      "name": "WorkflowyAdapter",
+      "type": "service",
+      "description": "API client that syncs projects and tasks from Workflowy",
+      "files": [
+        "src/adapters/WorkflowyAdapter.ts",
+        "src/adapters/WorkflowyAdapter.test.ts"
+      ],
+      "depends_on": [
+        "Electron Preload"
+      ]
+    },
+    {
+      "name": "notifications",
+      "type": "service",
+      "description": "Nudge scheduling, cooldown logic, and OS notification dispatch",
+      "files": [
+        "src/lib/notifications.ts",
+        "src/lib/notifications.test.ts"
+      ],
+      "depends_on": [
+        "time"
+      ]
+    },
+    {
+      "name": "taskTiming",
+      "type": "utility",
+      "description": "Tracks when each task became the active focus item",
+      "files": [
+        "src/lib/taskTiming.ts",
+        "src/lib/taskTiming.test.ts"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "snoozeOverlay",
+      "type": "utility",
+      "description": "Persists snooze state for Workflowy tasks across syncs",
+      "files": [
+        "src/lib/snoozeOverlay.ts",
+        "src/lib/snoozeOverlay.test.ts"
+      ],
+      "depends_on": [
+        "taskTiming"
+      ]
+    },
+    {
+      "name": "time",
+      "type": "utility",
+      "description": "Duration formatting, quiet hours check, and nudge schedule math",
+      "files": [
+        "src/lib/time.ts",
+        "src/lib/time.test.ts"
+      ],
+      "depends_on": [
+        "taskTiming"
+      ]
+    },
+    {
+      "name": "uid",
+      "type": "utility",
+      "description": "Generates unique IDs for projects and tasks",
+      "files": [
+        "src/lib/uid.ts"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "storage config",
+      "type": "config",
+      "description": "App configuration constants including storage key and display name",
+      "files": [
+        "src/config/storage.ts",
+        "app-config.json"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "types",
+      "type": "config",
+      "description": "Domain types, default settings, and global declarations",
+      "files": [
+        "src/types/index.ts"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Electron Main",
+      "type": "service",
+      "description": "Electron main process: window, tray, IPC handlers, lifecycle",
+      "files": [
+        "electron/main.ts",
+        "electron/main.js"
+      ],
+      "depends_on": [
+        "Electron Preload",
+        "Electron Startup",
+        "Electron NotificationOptions"
+      ]
+    },
+    {
+      "name": "Electron Preload",
+      "type": "middleware",
+      "description": "Context bridge exposing Electron APIs to the renderer process",
+      "files": [
+        "electron/preload.ts",
+        "electron/preload.js"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Electron NotificationOptions",
+      "type": "utility",
+      "description": "Resolves notification display options for OS notifications",
+      "files": [
+        "electron/notificationOptions.ts",
+        "electron/notificationOptions.js"
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Electron Startup",
+      "type": "utility",
+      "description": "Configures login item for launch-on-startup behavior",
+      "files": [
+        "electron/startup.ts",
+        "electron/startup.js",
+        "electron/startup.test.ts"
+      ],
+      "depends_on": []
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Focus View & Daily Work",
+      "description": "See all active projects at a glance, complete or snooze tasks, and trigger nudges",
+      "components": [
+        {
+          "name": "App",
+          "label": "Orchestrates the entire app interface"
+        },
+        {
+          "name": "FocusView",
+          "label": "Dashboard of next tasks sorted by urgency"
+        },
+        {
+          "name": "Toast",
+          "label": "Shows brief confirmation messages"
+        },
+        {
+          "name": "Toggle",
+          "label": "Turns settings on and off"
+        }
+      ],
+      "depends_on": [
+        "Project & Task Management"
+      ]
+    },
+    {
+      "name": "Project & Task Management",
+      "description": "Create, edit, organize, and navigate projects and their tasks",
+      "components": [
+        {
+          "name": "ProjectModal",
+          "label": "Create or edit a project"
+        },
+        {
+          "name": "ProjectView",
+          "label": "View and manage a project's tasks"
+        },
+        {
+          "name": "Sidebar",
+          "label": "Navigate between projects"
+        },
+        {
+          "name": "TaskModal",
+          "label": "Add or edit a task"
+        },
+        {
+          "name": "TaskList",
+          "label": "Organize and reorder tasks"
+        }
+      ],
+      "depends_on": [
+        "Data Storage"
+      ]
+    },
+    {
+      "name": "Settings & Configuration",
+      "description": "Customize notification behavior, quiet hours, Workflowy integration, and startup options",
+      "components": [
+        {
+          "name": "SettingsModal",
+          "label": "Configure all app settings"
+        },
+        {
+          "name": "useNotifications",
+          "label": "Manage notification permissions"
+        },
+        {
+          "name": "Modal",
+          "label": "Reusable dialog container for modals"
+        }
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Nudging Engine",
+      "description": "Background system that tracks task age, enforces cooldowns, respects quiet hours, and sends notifications",
+      "components": [
+        {
+          "name": "useNudgeTimer",
+          "label": "Periodic check for overdue tasks"
+        },
+        {
+          "name": "notifications",
+          "label": "Sends and rate-limits nudges"
+        },
+        {
+          "name": "time",
+          "label": "Calculates nudge schedules and quiet hours"
+        },
+        {
+          "name": "taskTiming",
+          "label": "Tracks active task focus duration"
+        },
+        {
+          "name": "snoozeOverlay",
+          "label": "Remembers snoozed tasks across syncs"
+        },
+        {
+          "name": "Electron NotificationOptions",
+          "label": "Controls how OS notifications appear"
+        }
+      ],
+      "depends_on": [
+        "Settings & Configuration",
+        "Focus View & Daily Work"
+      ]
+    },
+    {
+      "name": "Workflowy Sync",
+      "description": "Connect a Workflowy account to import projects and keep completion status in sync",
+      "components": [
+        {
+          "name": "WorkflowyAdapter",
+          "label": "Syncs projects and tasks from Workflowy"
+        }
+      ],
+      "depends_on": [
+        "Settings & Configuration"
+      ]
+    },
+    {
+      "name": "Data Storage",
+      "description": "Persists all app data in the browser and defines the data model",
+      "components": [
+        {
+          "name": "LocalStorageAdapter",
+          "label": "Saves data in browser localStorage"
+        },
+        {
+          "name": "uid",
+          "label": "Generates unique IDs"
+        },
+        {
+          "name": "storage config",
+          "label": "Defines storage key and app constants"
+        },
+        {
+          "name": "types",
+          "label": "Defines the shape of all app data"
+        }
+      ],
+      "depends_on": []
+    },
+    {
+      "name": "Desktop Integration",
+      "description": "Electron shell providing system tray, window management, and IPC between main and renderer processes",
+      "components": [
+        {
+          "name": "Electron Main",
+          "label": "Manages window, tray, and IPC handlers"
+        },
+        {
+          "name": "Electron Preload",
+          "label": "Bridges Electron APIs to the web app"
+        },
+        {
+          "name": "Electron Startup",
+          "label": "Sets up auto-launch on login"
+        },
+        {
+          "name": "useAppState",
+          "label": "Central state management hook"
+        }
+      ],
+      "depends_on": [
+        "Data Storage",
+        "Workflowy Sync"
+      ]
+    }
+  ],
+  "_timestamp": "2026-07-26T21:56:35.277489",
+  "_files_count": 49,
+  "mermaid": "graph TB\n    subgraph Component\n        App[\"App: Root component that wires routing, modals, nudge timer, and state\"]\n        Sidebar[\"Sidebar: Navigation sidebar showing project list and sync status\"]\n        TaskList[\"TaskList: Draggable task list with complete, snooze, edit, delete actions\"]\n        ProjectModal[\"ProjectModal: Modal dialog for creating or editing a project\"]\n        TaskModal[\"TaskModal: Modal dialog for adding or editing task details\"]\n        SettingsModal[\"SettingsModal: Full settings panel for notifications, Workflowy, and storage\"]\n        Modal[\"Modal: Reusable modal shell with backdrop, header, body, footer\"]\n        Toast[\"Toast: Temporary notification bar for user action feedback\"]\n        Toggle[\"Toggle: Reusable on/off toggle switch\"]\n    end\n    subgraph Page\n        FocusView[\"FocusView: Dashboard listing active projects sorted by next nudge time\"]\n        ProjectView[\"ProjectView: Detail view of a single project with its task list\"]\n    end\n    subgraph Service\n        useAppState[\"useAppState: Central state hook bridging adapters to React components\"]\n        useNudgeTimer[\"useNudgeTimer: Background timer that checks projects and triggers nudges\"]\n        useNotifications[\"useNotifications: Manages browser notification permission state\"]\n        WorkflowyAdapter[\"WorkflowyAdapter: API client that syncs projects and tasks from Workflowy\"]\n        notifications[\"notifications: Nudge scheduling, cooldown logic, and OS notification dispatch\"]\n        Electron_Main[\"Electron Main: Electron main process: window, tray, IPC handlers, lifecycle\"]\n    end\n    subgraph Database\n        LocalStorageAdapter[\"LocalStorageAdapter: Persists projects, tasks, and settings in browser localStorage\"]\n    end\n    subgraph Utility\n        taskTiming[\"taskTiming: Tracks when each task became the active focus item\"]\n        snoozeOverlay[\"snoozeOverlay: Persists snooze state for Workflowy tasks across syncs\"]\n        time[\"time: Duration formatting, quiet hours check, and nudge schedule math\"]\n        uid[\"uid: Generates unique IDs for projects and tasks\"]\n        Electron_NotificationOptions[\"Electron NotificationOptions: Resolves notification display options for OS notifications\"]\n        Electron_Startup[\"Electron Startup: Configures login item for launch-on-startup behavior\"]\n    end\n    subgraph Config\n        storage_config[\"storage config: App configuration constants including storage key and display name\"]\n        types[\"types: Domain types, default settings, and global declarations\"]\n    end\n    subgraph Middleware\n        Electron_Preload[\"Electron Preload: Context bridge exposing Electron APIs to the renderer process\"]\n    end\n    App --> useAppState\n    App --> useNudgeTimer\n    App --> FocusView\n    App --> Sidebar\n    App --> ProjectView\n    App --> ProjectModal\n    App --> TaskModal\n    App --> SettingsModal\n    App --> Toast\n    FocusView --> time\n    FocusView --> notifications\n    ProjectView --> TaskList\n    TaskList --> time\n    ProjectModal --> Modal\n    TaskModal --> Modal\n    SettingsModal --> Modal\n    SettingsModal --> Toggle\n    SettingsModal --> WorkflowyAdapter\n    useAppState --> LocalStorageAdapter\n    useAppState --> WorkflowyAdapter\n    useAppState --> snoozeOverlay\n    useNudgeTimer --> notifications\n    useNudgeTimer --> time\n    LocalStorageAdapter --> taskTiming\n    LocalStorageAdapter --> uid\n    LocalStorageAdapter --> storage_config\n    WorkflowyAdapter --> Electron_Preload\n    notifications --> time\n    snoozeOverlay --> taskTiming\n    time --> taskTiming\n    Electron_Main --> Electron_Preload\n    Electron_Main --> Electron_Startup\n    Electron_Main --> Electron_NotificationOptions",
+  "workflow_mermaid": "graph TB\n    subgraph wf_focus_view_daily_work[\"Focus View & Daily Work\"]\n        wf_focus_view_daily_work_desc[\"See all active projects at a glance, complete or snooze tasks, and trigger nudges\"]\n        style wf_focus_view_daily_work_desc fill:#f0f0f0,stroke:#ccc\n        app[\"Orchestrates the entire app interface\"]\n        focusview[\"Dashboard of next tasks sorted by urgency\"]\n        toast[\"Shows brief confirmation messages\"]\n        toggle[\"Turns settings on and off\"]\n    end\n    subgraph wf_project_task_management[\"Project & Task Management\"]\n        wf_project_task_management_desc[\"Create, edit, organize, and navigate projects and their tasks\"]\n        style wf_project_task_management_desc fill:#f0f0f0,stroke:#ccc\n        projectmodal[\"Create or edit a project\"]\n        projectview[\"View and manage a project's tasks\"]\n        sidebar[\"Navigate between projects\"]\n        taskmodal[\"Add or edit a task\"]\n        tasklist[\"Organize and reorder tasks\"]\n    end\n    subgraph wf_settings_configuration[\"Settings & Configuration\"]\n        wf_settings_configuration_desc[\"Customize notification behavior, quiet hours, Workflowy integration, and startup options\"]\n        style wf_settings_configuration_desc fill:#f0f0f0,stroke:#ccc\n        settingsmodal[\"Configure all app settings\"]\n        usenotifications[\"Manage notification permissions\"]\n        modal[\"Reusable dialog container for modals\"]\n    end\n    subgraph wf_nudging_engine[\"Nudging Engine\"]\n        wf_nudging_engine_desc[\"Background system that tracks task age, enforces cooldowns, respects quiet hours, and sends notifications\"]\n        style wf_nudging_engine_desc fill:#f0f0f0,stroke:#ccc\n        usenudgetimer[\"Periodic check for overdue tasks\"]\n        notifications[\"Sends and rate-limits nudges\"]\n        time[\"Calculates nudge schedules and quiet hours\"]\n        tasktiming[\"Tracks active task focus duration\"]\n        snoozeoverlay[\"Remembers snoozed tasks across syncs\"]\n        electron_notificationoptions[\"Controls how OS notifications appear\"]\n    end\n    subgraph wf_workflowy_sync[\"Workflowy Sync\"]\n        wf_workflowy_sync_desc[\"Connect a Workflowy account to import projects and keep completion status in sync\"]\n        style wf_workflowy_sync_desc fill:#f0f0f0,stroke:#ccc\n        workflowyadapter[\"Syncs projects and tasks from Workflowy\"]\n    end\n    subgraph wf_data_storage[\"Data Storage\"]\n        wf_data_storage_desc[\"Persists all app data in the browser and defines the data model\"]\n        style wf_data_storage_desc fill:#f0f0f0,stroke:#ccc\n        localstorageadapter[\"Saves data in browser localStorage\"]\n        uid[\"Generates unique IDs\"]\n        storage_config[\"Defines storage key and app constants\"]\n        types[\"Defines the shape of all app data\"]\n    end\n    subgraph wf_desktop_integration[\"Desktop Integration\"]\n        wf_desktop_integration_desc[\"Electron shell providing system tray, window management, and IPC between main and renderer processes\"]\n        style wf_desktop_integration_desc fill:#f0f0f0,stroke:#ccc\n        electron_main[\"Manages window, tray, and IPC handlers\"]\n        electron_preload[\"Bridges Electron APIs to the web app\"]\n        electron_startup[\"Sets up auto-launch on login\"]\n        useappstate[\"Central state management hook\"]\n    end\n    wf_focus_view_daily_work -->|triggers| wf_project_task_management\n    wf_project_task_management -->|triggers| wf_data_storage\n    wf_nudging_engine -->|triggers| wf_settings_configuration\n    wf_nudging_engine -->|triggers| wf_focus_view_daily_work\n    wf_workflowy_sync -->|triggers| wf_settings_configuration\n    wf_desktop_integration -->|triggers| wf_data_storage\n    wf_desktop_integration -->|triggers| wf_workflowy_sync"
+}

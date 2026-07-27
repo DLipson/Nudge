@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useAppState } from "./hooks/useAppState";
-import { useNotifications } from "./hooks/useNotifications";
 import { useNudgeTimer } from "./hooks/useNudgeTimer";
 import { triggerNextNudge } from "./lib/notifications";
 import {
@@ -54,7 +53,6 @@ function App() {
     activeProjects,
   } = useAppState();
 
-  const { permission, canNotify, requestPermission } = useNotifications();
   const [modal, setModal] = useState<ModalState>(null);
   const [toast, setToast] = useState("");
   const toastTimer = useRef<number | null>(null);
@@ -66,7 +64,9 @@ function App() {
     taskStartTimes,
     getNextTask,
     isSnoozed,
-    enabled: canNotify && settings.notificationsEnabled,
+    // Nudges are delivered through Electron's native notifications, so only
+    // run the timer when the bridge is present.
+    enabled: settings.notificationsEnabled && !!window.electronAPI,
   });
 
   const showToast = useCallback((msg: string) => {
@@ -202,25 +202,6 @@ function App() {
         onSyncWorkflowy={syncWorkflowy}
       />
       <div className="nudge-main">
-        {/* Notification permission banner */}
-        {permission === "default" && settings.notificationsEnabled && (
-          <div className="notification-banner">
-            <p>
-              Enable browser notifications to get gentle nudges when tasks need
-              attention.
-            </p>
-            <button className="btn primary" onClick={requestPermission}>
-              Enable notifications
-            </button>
-            <button
-              className="btn"
-              onClick={() => updateSettings({ notificationsEnabled: false })}
-            >
-              No thanks
-            </button>
-          </div>
-        )}
-
         <Routes>
           <Route
             path="/"
