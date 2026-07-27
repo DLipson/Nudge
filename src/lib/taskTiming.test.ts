@@ -129,6 +129,27 @@ describe("syncActiveTaskStartTimes", () => {
     expect(second.taskStartTimes).toEqual({ "local-storage:t1": 1000 });
   });
 
+  it("prunes start times for tasks that no longer exist in any project", () => {
+    const task = makeTask({ id: "t1", sourceId: "workflowy" });
+    const project = makeProject({
+      id: "p1",
+      sourceId: "workflowy",
+      tasks: [task],
+    });
+
+    const result = syncActiveTaskStartTimes(
+      [project],
+      {
+        "workflowy:t1": 1000, // still exists — keep
+        "workflowy:gone": 500, // removed remotely — should be pruned
+      },
+      2000
+    );
+
+    expect(result.changed).toBe(true);
+    expect(result.taskStartTimes).toEqual({ "workflowy:t1": 1000 });
+  });
+
   it("does not reset the clock to now when a paused project is resumed", () => {
     const task = makeTask({ id: "t1", sourceId: "local-storage" });
     const project = makeProject({

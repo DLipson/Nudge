@@ -42,5 +42,19 @@ export function syncActiveTaskStartTimes(
     }
   }
 
+  // Prune entries whose task no longer exists in ANY project (including tasks
+  // removed by an external source like Workflowy). Paused-project tasks are
+  // still present in the task set, so their frozen entries are preserved.
+  const validKeys = new Set<string>();
+  for (const project of projects) {
+    for (const task of project.tasks) validKeys.add(taskTimingKey(task));
+  }
+  for (const key of Object.keys(nextStartTimes)) {
+    if (!validKeys.has(key)) {
+      delete nextStartTimes[key];
+      changed = true;
+    }
+  }
+
   return { changed, taskStartTimes: nextStartTimes };
 }
