@@ -21,6 +21,9 @@ export function isSnoozed(
 
 /** Nudge level for the current task given its age and the project's interval. */
 export function getNudgeLevel(ageMs: number, nudgeMinutes: number): NudgeLevel {
+  // A non-positive interval has no meaningful ratio; treat as not-yet-due
+  // rather than dividing by zero into NaN/Infinity.
+  if (nudgeMinutes <= 0) return "ok";
   const ratio = ageMs / (nudgeMinutes * 60_000);
   if (ratio < NUDGE_WARN_RATIO) return "ok";
   if (ratio < NUDGE_ATTENTION_RATIO) return "warn";
