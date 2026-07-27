@@ -241,6 +241,34 @@ describe("WorkflowyAdapter", () => {
     expect(b[0].tasks).toHaveLength(1);
   });
 
+  it("does not throw when a write returns a 204 with an empty body", async () => {
+    const workflowyFetch = vi.fn(async (url: string) => {
+      if (url.includes("/complete")) {
+        return { ok: true, status: 204, statusText: "No Content", text: "" };
+      }
+      const parentId = new URL(url).searchParams.get("parent_id");
+      const nodes =
+        parentId === "None"
+          ? [{ id: "p1", name: "#nudge Alpha" }]
+          : parentId === "p1"
+          ? [{ id: "t1", name: "Task" }]
+          : [];
+      return { ok: true, status: 200, statusText: "OK", text: JSON.stringify(nodes) };
+    });
+    vi.stubGlobal("window", { electronAPI: { workflowyFetch } });
+
+    const adapter = new WorkflowyAdapter(makeConfig());
+    await adapter.connect();
+
+    await expect(adapter.completeTask("t1")).resolves.toBeUndefined();
+  });
+
+  it("throws a clear error when the Electron bridge is unavailable", async () => {
+    vi.stubGlobal("window", {});
+    const adapter = new WorkflowyAdapter(makeConfig());
+    await expect(adapter.connect()).rejects.toThrow(/desktop app/i);
+  });
+
   it("resets the in-flight guard after a failed fetch", async () => {
     installWorkflowyFetchMock(
       {

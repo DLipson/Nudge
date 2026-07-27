@@ -53,13 +53,22 @@ export class WorkflowyAdapter implements TaskSourceAdapter {
   }
 
   private async doFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    if (!window.electronAPI) {
+      throw new Error("Workflowy sync requires the Nudge desktop app.");
+    }
     const url = `${API_BASE}${endpoint}`;
-    const result = await window.electronAPI!.workflowyFetch(url, {
+    const result = await window.electronAPI.workflowyFetch(url, {
       method: options.method as string | undefined,
       headers: options.headers as Record<string, string> | undefined,
       body: typeof options.body === "string" ? options.body : undefined,
     });
-    return new Response(result.text, { status: result.status, statusText: result.statusText });
+    // 204/205/304 are null-body statuses — the Response constructor throws if
+    // given any body for them (Workflowy's complete/uncomplete return 204).
+    const nullBody = result.status === 204 || result.status === 205 || result.status === 304;
+    return new Response(nullBody ? null : result.text, {
+      status: result.status,
+      statusText: result.statusText,
+    });
   }
 
   // ── Connection ────────────────────────────────────────────────────────────
