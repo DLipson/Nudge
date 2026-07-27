@@ -129,9 +129,8 @@ export function sendNudge(
   force = false
 ): boolean {
   if (!force) {
-    const { canNudge: canSend, reason } = canNudge(project.id, settings);
+    const { canNudge: canSend } = canNudge(project.id, settings);
     if (!canSend) {
-      console.log(`Skipping notification: ${reason}`);
       return false;
     }
   }

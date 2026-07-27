@@ -120,7 +120,6 @@ export function useAppState(): UseAppStateReturn {
       setLocalState(adp.getFullState());
       setStorageDiagnostics(adp.getDiagnostics());
       setIsLoading(false);
-      console.info("[Nudge] storage initialized", adp.getDiagnostics());
 
       // If Workflowy is enabled, start initial sync
       if (state.settings.workflowy?.enabled && state.settings.workflowy?.apiKey) {
