@@ -5,3 +5,7 @@ release/
 *.local
 .env
 .env.*
+
+# Generated app-map artifacts (xray tool)
+.xray/
+XRAY_MAP.md
