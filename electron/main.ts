@@ -159,19 +159,30 @@ ipcMain.handle(
     url: string,
     options: FetchOptions = {}
   ): Promise<{ ok: boolean; status: number; statusText: string; text: string }> => {
-    const response = await net.fetch(url, {
-      method: options.method || "GET",
-      headers: options.headers,
-      body: options.body,
-    });
+    try {
+      const response = await net.fetch(url, {
+        method: options.method || "GET",
+        headers: options.headers,
+        body: options.body,
+      });
 
-    const text = await response.text();
-    return {
-      ok: response.ok,
-      status: response.status,
-      statusText: response.statusText,
-      text,
-    };
+      const text = await response.text();
+      return {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        text,
+      };
+    } catch (err) {
+      // Normalize network failures to the same shape as HTTP errors so the
+      // renderer handles both via response.ok instead of an opaque rejection.
+      return {
+        ok: false,
+        status: 0,
+        statusText: err instanceof Error ? err.message : String(err),
+        text: "",
+      };
+    }
   }
 );
 
