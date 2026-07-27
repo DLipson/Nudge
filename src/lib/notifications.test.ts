@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { canNudge, sendNudge, resetNotificationState, subscribeNotificationState } from "./notifications";
+import { canNudge, sendNudge, resetNotificationState, subscribeNotificationState, triggerNextNudge } from "./notifications";
 import { DEFAULT_SETTINGS } from "../types";
 import type { Project, Task } from "../types";
 
@@ -136,6 +136,26 @@ describe("sendNudge", () => {
     sendNudge(project, task, settings);
     const sent = sendNudge(project, task, settings);
     expect(sent).toBe(false);
+    expect(window.electronAPI!.showNotification).toHaveBeenCalledOnce();
+  });
+});
+
+describe("triggerNextNudge batch size", () => {
+  const agedTask = { ...task, id: "t1" };
+  const projectWithTask: Project = { ...project, tasks: [agedTask] };
+  const taskStartTimes = { "local-storage:t1": Date.now() - 60 * 60_000 }; // 1h ago
+  const getNextTask = (p: Project) => p.tasks.find((t) => !t.done) ?? null;
+  const notSnoozed = () => false;
+
+  it("still fires when nudgeBatchSize is 0 (clamped to 1)", () => {
+    const sent = triggerNextNudge(
+      [projectWithTask],
+      { ...settings, nudgeBatchSize: 0 },
+      taskStartTimes,
+      getNextTask,
+      notSnoozed
+    );
+    expect(sent).toBe(true);
     expect(window.electronAPI!.showNotification).toHaveBeenCalledOnce();
   });
 });

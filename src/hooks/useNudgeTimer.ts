@@ -41,7 +41,7 @@ export function useNudgeTimer({
 
     // Check active projects
     const activeProjects = projects.filter((p) => p.active);
-    const batchSize = settings.nudgeBatchSize;
+    const batchSize = Math.max(1, settings.nudgeBatchSize);
 
     if (!canNudgeGlobal(settings)) {
       return;

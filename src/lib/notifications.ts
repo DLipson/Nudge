@@ -207,7 +207,7 @@ export function triggerNextNudge(
   isSnoozed: (task: Task) => boolean,
 ): boolean {
   const activeProjects = projects.filter((p) => p.active);
-  const batchSize = settings.nudgeBatchSize;
+  const batchSize = Math.max(1, settings.nudgeBatchSize);
 
   const batch: Array<{ project: Project; task: Task }> = [];
   for (const project of activeProjects) {
