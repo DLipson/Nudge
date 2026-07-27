@@ -27,6 +27,7 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     hasPersistedState: false,
     projectCount: 0,
     workflowyEnabled: false,
+    lastPersistError: null,
   };
 
   // ── Connection ────────────────────────────────────────────────────────────
@@ -364,9 +365,12 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
       this.diagnostics.stateSource = "persisted";
       this.diagnostics.hasPersistedState = true;
+      this.diagnostics.lastPersistError = null;
       this.updateDiagnostics();
-    } catch {
-      // Ignore storage errors
+    } catch (err) {
+      // Surface the failure (e.g. QuotaExceededError) instead of losing data silently.
+      this.diagnostics.lastPersistError =
+        err instanceof Error ? err.message : String(err);
     }
   }
 

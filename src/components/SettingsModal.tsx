@@ -462,6 +462,11 @@ export function SettingsModal({
             No persisted app state was found. Nudge started from an empty state.
           </div>
         )}
+        {storageDiagnostics?.lastPersistError && (
+          <div style={{ color: "#f05050", marginTop: 8 }}>
+            Last save failed: {storageDiagnostics.lastPersistError}. Your changes may not be persisted.
+          </div>
+        )}
         {storageDiagnostics?.stateSource === "invalid" && (
           <div style={{ color: "#f05050", marginTop: 8 }}>
             Persisted state exists but could not be parsed. Check the storage key and stored payload before changing app identity or storage behavior.

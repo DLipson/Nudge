@@ -96,6 +96,7 @@ export interface StorageDiagnostics {
   hasPersistedState: boolean;
   projectCount: number;
   workflowyEnabled: boolean;
+  lastPersistError: string | null; // set when a localStorage write fails (e.g. quota)
 }
 
 // Nudge level for visual indicators

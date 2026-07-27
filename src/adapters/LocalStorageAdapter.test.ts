@@ -228,6 +228,23 @@ describe("LocalStorageAdapter", () => {
     });
   });
 
+  describe("persist failure surfacing", () => {
+    it("records a diagnostic when a localStorage write throws", async () => {
+      const adapter = await makeAdapter();
+      const spy = vi
+        .spyOn(Storage.prototype, "setItem")
+        .mockImplementation(() => {
+          throw new DOMException("quota", "QuotaExceededError");
+        });
+      try {
+        await adapter.addProject!("P", "#aaa", 25);
+      } finally {
+        spy.mockRestore();
+      }
+      expect(adapter.getDiagnostics().lastPersistError).toBeTruthy();
+    });
+  });
+
   // Regression: the app reacts to state changes by reference identity
   // (setLocalState(getFullState())). If getFullState/getDiagnostics return the
   // same mutated object each call, React bails on the update and the UI only
