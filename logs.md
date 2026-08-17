@@ -1,5 +1,15 @@
 # Logs
 
+## 2026-08-17 - Login startup deleted itself when stored settings predated the feature
+
+**Bug** - Nudge stopped appearing in Windows startup after the stored settings failed to include the `launchOnStartup` key.
+
+**Root Cause** - Settings persisted by older app versions have no `launchOnStartup` key. The load path merges stored settings over `DEFAULT_SETTINGS`, so the missing key resolved to `false`, and the init sync then called `setLoginItemSettings({ openAtLogin: false })`, removing Nudge from the Run key on every launch.
+
+**Fix** - The adapter now exposes `hasStoredSetting(key)` to detect whether a key exists in the raw persisted payload. Init only syncs app→OS when `launchOnStartup` is actually stored; when the key is missing (old settings), init adopts the OS state instead of defaulting to false and deleting the registration. User toggles still write to the OS immediately, so the OS list remains the source of truth once a preference is stored.
+
+**Verification** - Added regression coverage in `LocalStorageAdapter.test.ts` for `hasStoredSetting` with the key present, missing, and empty storage. Confirmed with `npm test -- --run` (108 passing) and `npm run build`.
+
 ## 2026-05-18 - Active task timers were not initialized
 
 **Bug** - Nudges could not become due for newly active tasks because active task start times were never recorded.
