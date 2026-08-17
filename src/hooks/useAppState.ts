@@ -111,10 +111,18 @@ export function useAppState(): UseAppStateReturn {
         await adp.connect();
       }
       const state = adp.getFullState();
-      // Sync app→OS: the stored preference is authoritative. Reading OS→app
-      // instead would overwrite the user's choice with false whenever the OS
-      // Run key is missing (e.g. first launch or a cleared registry).
-      window.electronAPI?.setLaunchOnStartup?.(state.settings.launchOnStartup);
+      if (adp.hasStoredSetting("launchOnStartup")) {
+        // Stored preference is authoritative: re-register a cleared Run key
+        // rather than losing the user's choice.
+        window.electronAPI?.setLaunchOnStartup?.(state.settings.launchOnStartup);
+      } else {
+        // Old settings predate the launchOnStartup key. Adopt the OS state
+        // instead of defaulting to false, which would delete a real Run key
+        // registration on every launch.
+        const launchOnStartup =
+          (await window.electronAPI?.getLaunchOnStartup?.()) ?? false;
+        adp.updateSettings({ launchOnStartup });
+      }
 
       setLocalState(adp.getFullState());
       setStorageDiagnostics(adp.getDiagnostics());

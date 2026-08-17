@@ -228,6 +228,45 @@ describe("LocalStorageAdapter", () => {
     });
   });
 
+  // Regression: settings loaded from an old version predate the
+  // launchOnStartup key. The load path merges them with DEFAULT_SETTINGS, so
+  // a missing key is indistinguishable from its default without checking the
+  // raw persisted payload. hasStoredSetting must report the raw presence.
+  describe("hasStoredSetting", () => {
+    it("reports true when the raw persisted settings contain the key", async () => {
+      localStorage.clear();
+      localStorage.setItem(
+        "nudge_v4",
+        JSON.stringify({
+          projects: [],
+          settings: { launchOnStartup: true },
+        })
+      );
+      const adapter = new LocalStorageAdapter();
+      await adapter.connect();
+      expect(adapter.hasStoredSetting("launchOnStartup")).toBe(true);
+      expect(adapter.getFullState().settings.launchOnStartup).toBe(true);
+    });
+
+    it("reports false when the raw persisted settings lack the key", async () => {
+      localStorage.clear();
+      localStorage.setItem(
+        "nudge_v4",
+        JSON.stringify({ projects: [], settings: {} })
+      );
+      const adapter = new LocalStorageAdapter();
+      await adapter.connect();
+      expect(adapter.hasStoredSetting("launchOnStartup")).toBe(false);
+      // Default still applies after merge.
+      expect(adapter.getFullState().settings.launchOnStartup).toBe(false);
+    });
+
+    it("reports false when storage is empty", async () => {
+      const adapter = await makeAdapter();
+      expect(adapter.hasStoredSetting("launchOnStartup")).toBe(false);
+    });
+  });
+
   describe("persist failure surfacing", () => {
     it("records a diagnostic when a localStorage write throws", async () => {
       const adapter = await makeAdapter();

@@ -326,6 +326,20 @@ export class LocalStorageAdapter implements TaskSourceAdapter {
     return { ...this.diagnostics };
   }
 
+  // Whether a settings key exists in the raw persisted payload. After load,
+  // settings are merged with DEFAULT_SETTINGS, so a missing key is
+  // indistinguishable from its default value without checking the source.
+  hasStoredSetting(key: string): boolean {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === null) return false;
+    try {
+      const parsed = JSON.parse(saved);
+      return !!(parsed?.settings && key in parsed.settings);
+    } catch {
+      return false;
+    }
+  }
+
   // ── Private helpers ───────────────────────────────────────────────────────
 
   private loadFromStorage(): AppState {
