@@ -68,6 +68,7 @@ export interface Settings {
 
   // Notification settings
   notificationsEnabled: boolean;
+  nudgeIntensity: NudgeIntensity;
   maxNotificationFrequency: number; // Minutes between any notifications
   notificationDurationSeconds: number;
   notificationAutoDismiss: boolean;
@@ -105,6 +106,42 @@ export type NudgeLevel = "ok" | "warn" | "attention";
 // Project health status
 export type ProjectHealth = "active" | "needs-attention" | "neglected";
 
+// Notification intensity preset. One control replaces the individual
+// frequency/duration/cooldown/batch/tone knobs.
+export type NudgeIntensity = "gentle" | "balanced" | "aggressive";
+
+export interface NudgeIntensityPreset {
+  maxNotificationFrequency: number;
+  notificationDurationSeconds: number;
+  projectCooldown: number;
+  nudgeBatchSize: number;
+  nudgeTone: "gentle" | "firm";
+}
+
+export const NUDGE_INTENSITY_PRESETS: Record<NudgeIntensity, NudgeIntensityPreset> = {
+  gentle: {
+    maxNotificationFrequency: 30,
+    notificationDurationSeconds: 12,
+    projectCooldown: 360,
+    nudgeBatchSize: 1,
+    nudgeTone: "gentle",
+  },
+  balanced: {
+    maxNotificationFrequency: 10,
+    notificationDurationSeconds: 8,
+    projectCooldown: 180,
+    nudgeBatchSize: 1,
+    nudgeTone: "gentle",
+  },
+  aggressive: {
+    maxNotificationFrequency: 3,
+    notificationDurationSeconds: 6,
+    projectCooldown: 60,
+    nudgeBatchSize: 2,
+    nudgeTone: "firm",
+  },
+};
+
 // Default Workflowy config
 export const DEFAULT_WORKFLOWY_CONFIG: WorkflowyConfig = {
   apiKey: "",
@@ -119,6 +156,7 @@ export const DEFAULT_SETTINGS: Settings = {
   nudgeMinutes: 180,
   showCompleted: true,
   notificationsEnabled: true,
+  nudgeIntensity: "balanced",
   maxNotificationFrequency: 10, // 10 minutes between any notifications
   notificationDurationSeconds: 8,
   notificationAutoDismiss: true,

@@ -1,8 +1,13 @@
 import { useState } from "react";
 import { Modal } from "./Modal";
 import { Toggle } from "./Toggle";
-import type { Settings, WorkflowyConfig, StorageDiagnostics } from "../types";
-import { DEFAULT_WORKFLOWY_CONFIG } from "../types";
+import type {
+  Settings,
+  WorkflowyConfig,
+  StorageDiagnostics,
+  NudgeIntensity,
+} from "../types";
+import { DEFAULT_WORKFLOWY_CONFIG, NUDGE_INTENSITY_PRESETS } from "../types";
 import { WorkflowyAdapter } from "../adapters/WorkflowyAdapter";
 
 interface SettingsModalProps {
@@ -26,11 +31,9 @@ export function SettingsModal({
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     settings.notificationsEnabled
   );
-  const [maxNotificationFrequency, setMaxNotificationFrequency] = useState(
-    settings.maxNotificationFrequency
+  const [nudgeIntensity, setNudgeIntensity] = useState<NudgeIntensity>(
+    settings.nudgeIntensity || "balanced"
   );
-  const [notificationDurationSeconds, setNotificationDurationSeconds] =
-    useState(settings.notificationDurationSeconds);
   const [notificationAutoDismiss, setNotificationAutoDismiss] = useState(
     settings.notificationAutoDismiss
   );
@@ -38,8 +41,6 @@ export function SettingsModal({
     settings.quietHoursStart
   );
   const [quietHoursEnd, setQuietHoursEnd] = useState(settings.quietHoursEnd);
-  const [nudgeBatchSize, setNudgeBatchSize] = useState(settings.nudgeBatchSize);
-  const [nudgeTone, setNudgeTone] = useState(settings.nudgeTone);
 
   // Workflowy settings
   const workflowySettings = settings.workflowy || DEFAULT_WORKFLOWY_CONFIG;
@@ -84,13 +85,11 @@ export function SettingsModal({
       showCompleted,
       launchOnStartup,
       notificationsEnabled,
-      maxNotificationFrequency,
-      notificationDurationSeconds,
+      nudgeIntensity,
+      ...NUDGE_INTENSITY_PRESETS[nudgeIntensity],
       notificationAutoDismiss,
       quietHoursStart,
       quietHoursEnd,
-      nudgeBatchSize,
-      nudgeTone,
       workflowy,
     });
   };
@@ -194,42 +193,28 @@ export function SettingsModal({
 
       <div className="setting-row">
         <div>
-          <div className="setting-label">
-            Max notification frequency (minutes)
-          </div>
+          <div className="setting-label">Nudge intensity</div>
           <div className="setting-sub">
-            Minimum time between any notifications
+            How often and how firmly Nudge reminds you
           </div>
         </div>
-        <input
-          type="number"
-          min="1"
-          max="60"
-          value={maxNotificationFrequency}
-          onChange={(e) =>
-            setMaxNotificationFrequency(
-              Math.min(60, Math.max(1, parseInt(e.target.value) || 10))
-            )
-          }
-          style={inputStyle}
-        />
-      </div>
-
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Nudge batch size</div>
-          <div className="setting-sub">Projects per notification (1 = one at a time)</div>
-        </div>
-        <input
-          type="number"
-          min="1"
-          max="20"
-          value={nudgeBatchSize}
-          onChange={(e) =>
-            setNudgeBatchSize(Math.max(1, parseInt(e.target.value) || 1))
-          }
-          style={inputStyle}
-        />
+        <select
+          value={nudgeIntensity}
+          onChange={(e) => setNudgeIntensity(e.target.value as NudgeIntensity)}
+          style={{
+            padding: "6px 10px",
+            background: "#0f0f0f",
+            border: "1px solid rgba(255,255,255,0.14)",
+            borderRadius: 8,
+            color: "#f0f0f0",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 13,
+          }}
+        >
+          <option value="gentle">Gentle</option>
+          <option value="balanced">Balanced</option>
+          <option value="aggressive">Firm</option>
+        </select>
       </div>
 
       <div className="setting-row">
@@ -242,31 +227,6 @@ export function SettingsModal({
         <Toggle
           on={notificationAutoDismiss}
           onChange={setNotificationAutoDismiss}
-        />
-      </div>
-
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Notification duration (seconds)</div>
-          <div className="setting-sub">
-            How long auto-dismissed nudges stay visible
-          </div>
-        </div>
-        <input
-          type="number"
-          min="1"
-          max="300"
-          disabled={!notificationAutoDismiss}
-          value={notificationDurationSeconds}
-          onChange={(e) =>
-            setNotificationDurationSeconds(
-              Math.min(300, Math.max(1, parseInt(e.target.value) || 8))
-            )
-          }
-          style={{
-            ...inputStyle,
-            opacity: notificationAutoDismiss ? 1 : 0.45,
-          }}
         />
       </div>
 
@@ -302,29 +262,6 @@ export function SettingsModal({
             style={{ ...inputStyle, width: 45, textAlign: "center" }}
           />
         </div>
-      </div>
-
-      <div className="setting-row">
-        <div>
-          <div className="setting-label">Nudge tone</div>
-          <div className="setting-sub">How the notifications are phrased</div>
-        </div>
-        <select
-          value={nudgeTone}
-          onChange={(e) => setNudgeTone(e.target.value as "gentle" | "firm")}
-          style={{
-            padding: "6px 10px",
-            background: "#0f0f0f",
-            border: "1px solid rgba(255,255,255,0.14)",
-            borderRadius: 8,
-            color: "#f0f0f0",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 13,
-          }}
-        >
-          <option value="gentle">Gentle</option>
-          <option value="firm">Firm</option>
-        </select>
       </div>
 
       {/* Workflowy Integration */}
