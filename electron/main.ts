@@ -85,8 +85,14 @@ function createWindow(): void {
   });
 
   if (isDev) {
-    mainWindow.loadURL("http://localhost:3000");
-    mainWindow.webContents.openDevTools({ mode: "detach" });
+    // Prefer the live dev server, but fall back to the built app when it
+    // isn't running (e.g. launch-on-login from the dev checkout).
+    mainWindow
+      .loadURL("http://localhost:3000")
+      .catch(() => mainWindow!.loadFile(path.join(__dirname, "../dist/index.html")));
+    if (!startHidden) {
+      mainWindow.webContents.openDevTools({ mode: "detach" });
+    }
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
