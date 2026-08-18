@@ -1,6 +1,5 @@
 import { NavLink } from "react-router-dom";
 import type { Project } from "../types";
-import { nextIncompleteTask } from "../lib/nudge";
 
 interface SidebarProps {
   projects: Project[];
@@ -63,13 +62,10 @@ export function Sidebar({
 
         {/* Combined project list: local first, then Workflowy */}
         {[...localProjects, ...workflowyProjects].map((p) => {
-          const next = nextIncompleteTask(p);
-
           return (
             <NavLink
               key={p.id}
               to={`/project/${p.id}`}
-              title={next?.name ? `Next: ${next.name}` : undefined}
               className={({ isActive }) => `sb-item ${isActive ? "active" : ""}`}
             >
               <span className="sb-dot" style={{ background: p.color }} />

@@ -15,25 +15,6 @@ interface TaskListProps {
   onAddTask: () => void;
 }
 
-// Pencil/Edit icon SVG
-function EditIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  );
-}
-
 // Drag handle icon SVG
 function DragHandleIcon() {
   return (
@@ -51,6 +32,51 @@ function DragHandleIcon() {
       <circle cx="9" cy="18" r="1.5" />
       <circle cx="15" cy="18" r="1.5" />
     </svg>
+  );
+}
+
+// ⋮ overflow menu with task edit/delete actions
+function OverflowMenu({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="task-menu">
+      <button
+        className="task-btn icon-only"
+        onClick={() => setOpen((o) => !o)}
+        title="More actions"
+      >
+        &middot;&middot;&middot;
+      </button>
+      {open && (
+        <div className="task-menu-dropdown">
+          <button
+            className="task-menu-item"
+            onClick={() => {
+              setOpen(false);
+              onEdit();
+            }}
+          >
+            Edit
+          </button>
+          <button
+            className="task-menu-item danger"
+            onClick={() => {
+              setOpen(false);
+              onDelete();
+            }}
+          >
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -149,9 +175,19 @@ export function TaskList({
                   <DragHandleIcon />
                 </div>
                 <div
-                  className={`task-step ${
-                    isDone ? "done" : isActive ? "active" : ""
-                  }`}
+                  className={`task-step ${isDone ? "done" : isActive ? "active" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (isActive && !isDone) onComplete(task.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      if (isActive && !isDone) onComplete(task.id);
+                    }
+                  }}
+                  title={isActive && !isDone ? "Mark done" : undefined}
                 >
                   {isDone ? "\u2713" : i + 1}
                 </div>
@@ -171,9 +207,6 @@ export function TaskList({
                       Done {formatDate(task.completedAt)}
                     </div>
                   )}
-                  {isActive && !snoozed && (
-                    <span className="task-tag active">Current focus</span>
-                  )}
                   {snoozed && (
                     <span className="task-tag snoozed">
                       Snoozed - {formatDuration(task.snoozedUntil! - Date.now())}{" "}
@@ -192,8 +225,9 @@ export function TaskList({
                   )}
                   {!isDone && isActive && (
                     <button
-                      className="task-btn"
+                      className="task-btn primary"
                       onClick={() => onComplete(task.id)}
+                      title="Mark done"
                     >
                       Done
                     </button>
@@ -206,20 +240,10 @@ export function TaskList({
                       Wake
                     </button>
                   )}
-                  <button
-                    className="task-btn icon-only"
-                    onClick={() => onEdit(task)}
-                    title="Edit task"
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    className="task-btn danger"
-                    onClick={() => onDelete(task.id)}
-                    title="Delete task"
-                  >
-                    &times;
-                  </button>
+                  <OverflowMenu
+                    onEdit={() => onEdit(task)}
+                    onDelete={() => onDelete(task.id)}
+                  />
                 </div>
               </li>
             );

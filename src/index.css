@@ -387,6 +387,12 @@ body {
   cursor: grab;
   color: #555;
   transition: color 0.12s;
+  opacity: 0;
+}
+
+.task-row:hover .drag-handle,
+.task-row.dragging .drag-handle {
+  opacity: 1;
 }
 
 .drag-handle:hover {
@@ -411,6 +417,11 @@ body {
   margin-top: 1px;
   color: #555;
   font-family: monospace;
+  user-select: none;
+}
+
+.task-step.active {
+  cursor: pointer;
 }
 
 .task-step.done {
@@ -469,11 +480,6 @@ body {
   font-weight: 500;
 }
 
-.task-tag.active {
-  background: rgba(200, 240, 74, 0.12);
-  color: #c8f04a;
-}
-
 .task-tag.snoozed {
   background: #222;
   color: #555;
@@ -504,12 +510,55 @@ body {
   color: #f0f0f0;
 }
 
+.task-btn.primary {
+  color: #c8f04a;
+  border-color: rgba(200, 240, 74, 0.35);
+}
+
 .task-btn.danger {
   color: #f05050;
 }
 
 .task-btn.icon-only {
   padding: 4px 6px;
+}
+
+.task-menu {
+  position: relative;
+}
+
+.task-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+}
+
+.task-menu-item {
+  padding: 6px 10px;
+  font-size: 12px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #d0d0d0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.task-menu-item:hover {
+  background: #292929;
+}
+
+.task-menu-item.danger {
+  color: #f05050;
 }
 
 .add-task-trigger {
